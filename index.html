@@ -810,17 +810,22 @@
         }
 
         function openInExternalBrowser() {
-            // 在 LINE 中，複製當前 URL 並提示用戶
             const currentUrl = window.location.href;
 
-            // 嘗試使用 LINE 的 URL scheme 打開外部瀏覽器
-            const externalUrl = currentUrl.replace(/^https?:\/\//, '');
-            window.location.href = `line://external-browser/${externalUrl}`;
+            // 嘗試複製網址到剪貼簿
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(currentUrl).then(() => {
+                    alert('✅ 網址已複製到剪貼簿！\n\n請執行以下步驟：\n\n📱 方法一：\n1️⃣ 點擊右上角選單（⋯）\n2️⃣ 選擇「在瀏覽器中開啟」\n\n💻 方法二：\n1️⃣ 開啟 Safari 或 Chrome\n2️⃣ 貼上剛才複製的網址');
+                }).catch(() => {
+                    showManualInstructions(currentUrl);
+                });
+            } else {
+                showManualInstructions(currentUrl);
+            }
+        }
 
-            // 如果上面的方法不起作用，提供替代方案
-            setTimeout(() => {
-                alert('請點擊右上角選單（⋯）\n選擇「在瀏覽器中開啟」\n\n或複製以下網址到 Safari/Chrome：\n' + currentUrl);
-            }, 500);
+        function showManualInstructions(url) {
+            alert('請執行以下步驟開啟外部瀏覽器：\n\n📱 方法一：\n1️⃣ 點擊右上角選單（⋯）\n2️⃣ 選擇「在瀏覽器中開啟」\n\n💻 方法二：\n1️⃣ 開啟 Safari 或 Chrome\n2️⃣ 輸入以下網址：\n' + url);
         }
 
         function dismissLineWarning() {
