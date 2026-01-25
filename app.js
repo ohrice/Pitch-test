@@ -159,23 +159,18 @@ async function loadSongFromStorage(song) {
     let midiFile, accompFile;
 
     if (song.midiURL) {
-        // 新格式：Firebase URL - 使用 Firebase Storage SDK
+        // 新格式：Firebase URL - 使用 XMLHttpRequest 下載（更好的移動端相容性）
         console.log('從 Firebase 下載 MIDI:', song.midiURL);
 
         try {
-            // 使用 Firebase Storage SDK 的 refFromURL 和 getBlob 方法
+            // 下載 MIDI 檔案
             console.log('下載 MIDI 檔案...');
-            const midiRef = storage.refFromURL(song.midiURL);
-            const midiBlob = await midiRef.getBlob();
+            const midiBlob = await downloadFileAsBlob(song.midiURL, 'audio/midi');
             console.log('MIDI 下載成功，大小:', midiBlob.size, 'bytes');
-
             midiFile = new File([midiBlob], song.midiFileName || 'melody.mid', { type: 'audio/midi' });
 
             // 下載伴奏
             console.log('從 Firebase 下載伴奏:', song.accompURL);
-            const accompRef = storage.refFromURL(song.accompURL);
-            const accompBlob = await accompRef.getBlob();
-            console.log('伴奏下載成功，大小:', accompBlob.size, 'bytes');
 
             // 根據檔案副檔名判斷正確的 MIME 類型
             const accompFileName = song.accompFileName || 'accomp.mp3';
@@ -186,6 +181,8 @@ async function loadSongFromStorage(song) {
             else if (accompFileName.endsWith('.ogg')) accompMimeType = 'audio/ogg';
             else if (accompFileName.endsWith('.webm')) accompMimeType = 'audio/webm';
 
+            const accompBlob = await downloadFileAsBlob(song.accompURL, accompMimeType);
+            console.log('伴奏下載成功，大小:', accompBlob.size, 'bytes');
             accompFile = new File([accompBlob], accompFileName, { type: accompMimeType });
 
         } catch (error) {
@@ -240,6 +237,34 @@ async function loadSongFromStorage(song) {
             );
         });
     }
+}
+
+// 使用 XMLHttpRequest 下載檔案為 Blob（更好的移動端相容性）
+function downloadFileAsBlob(url, mimeType) {
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', url, true);
+        xhr.responseType = 'blob';
+
+        xhr.onload = function() {
+            if (xhr.status === 200) {
+                resolve(xhr.response);
+            } else {
+                reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+            }
+        };
+
+        xhr.onerror = function() {
+            reject(new Error('網路錯誤，無法下載檔案'));
+        };
+
+        xhr.ontimeout = function() {
+            reject(new Error('下載超時'));
+        };
+
+        xhr.timeout = 60000; // 60 秒超時
+        xhr.send();
+    });
 }
 
 // Base64 轉 File
