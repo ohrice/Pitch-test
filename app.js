@@ -159,34 +159,23 @@ async function loadSongFromStorage(song) {
     let midiFile, accompFile;
 
     if (song.midiURL) {
-        // 新格式：Firebase URL - 直接使用下載 URL（已包含 token）
+        // 新格式：Firebase URL - 使用 Firebase Storage SDK
         console.log('從 Firebase 下載 MIDI:', song.midiURL);
 
         try {
-            // Firebase Storage URL 已包含認證 token，直接下載
+            // 使用 Firebase Storage SDK 的 refFromURL 和 getBlob 方法
             console.log('下載 MIDI 檔案...');
-            const midiResponse = await fetch(song.midiURL);
+            const midiRef = storage.refFromURL(song.midiURL);
+            const midiBlob = await midiRef.getBlob();
+            console.log('MIDI 下載成功，大小:', midiBlob.size, 'bytes');
 
-            if (!midiResponse.ok) {
-                throw new Error(`MIDI 下載失敗: HTTP ${midiResponse.status}`);
-            }
-
-            const midiArrayBuffer = await midiResponse.arrayBuffer();
-            console.log('MIDI 下載成功，大小:', midiArrayBuffer.byteLength, 'bytes');
-
-            const midiBlob = new Blob([midiArrayBuffer], { type: 'audio/midi' });
             midiFile = new File([midiBlob], song.midiFileName || 'melody.mid', { type: 'audio/midi' });
 
             // 下載伴奏
             console.log('從 Firebase 下載伴奏:', song.accompURL);
-            const accompResponse = await fetch(song.accompURL);
-
-            if (!accompResponse.ok) {
-                throw new Error(`伴奏下載失敗: HTTP ${accompResponse.status}`);
-            }
-
-            const accompArrayBuffer = await accompResponse.arrayBuffer();
-            console.log('伴奏下載成功，大小:', accompArrayBuffer.byteLength, 'bytes');
+            const accompRef = storage.refFromURL(song.accompURL);
+            const accompBlob = await accompRef.getBlob();
+            console.log('伴奏下載成功，大小:', accompBlob.size, 'bytes');
 
             // 根據檔案副檔名判斷正確的 MIME 類型
             const accompFileName = song.accompFileName || 'accomp.mp3';
@@ -197,7 +186,6 @@ async function loadSongFromStorage(song) {
             else if (accompFileName.endsWith('.ogg')) accompMimeType = 'audio/ogg';
             else if (accompFileName.endsWith('.webm')) accompMimeType = 'audio/webm';
 
-            const accompBlob = new Blob([accompArrayBuffer], { type: accompMimeType });
             accompFile = new File([accompBlob], accompFileName, { type: accompMimeType });
 
         } catch (error) {
