@@ -70,10 +70,7 @@ function renderPartSongs(grid, partSongs, partType) {
 
         card.innerHTML = `
             <div style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <h3>${song.title}</h3>
-                    <span class="difficulty ${song.part}">${partLabels[song.part]}</span>
-                </div>
+                <h3>${song.title}</h3>
                 <div>
                     <button class="edit-btn admin-only" onclick="event.stopPropagation(); editSongHandler('${song.id}')">✏️</button>
                     <button class="delete-btn admin-only" onclick="event.stopPropagation(); deleteSongHandler('${song.id}')">🗑️</button>
