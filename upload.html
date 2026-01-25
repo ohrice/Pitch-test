@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>上傳歌曲 - JG 音樂平台</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --accent: #00d1b2;
+            --text: #ffffff;
+            --success: #48c774;
+            --warning: #ffdd57;
+            --danger: #f14668;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .upload-box {
+            border: 2px dashed #555;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: border-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .upload-box:hover {
+            border-color: var(--accent);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            color: #888;
+            cursor: pointer;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,209,178,0.1);
+            border-radius: 5px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(72, 199, 116, 0.2);
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        .status-message.error {
+            background: rgba(241, 70, 104, 0.2);
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎵 上傳新歌曲</h1>
+
+        <!-- 登入表單 -->
+        <div id="loginSection">
+            <div class="form-group">
+                <label for="adminEmail">管理員電子郵件</label>
+                <input type="email" id="adminEmail" placeholder="your-email@example.com">
+            </div>
+
+            <div class="form-group">
+                <label for="adminPassword">密碼</label>
+                <input type="password" id="adminPassword" placeholder="請輸入密碼">
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="window.location.href='index.html'">返回</button>
+                <button type="button" class="btn-primary" id="loginBtn" onclick="handleLogin()">登入</button>
+            </div>
+
+            <div class="status-message" id="loginMessage"></div>
+        </div>
+
+        <!-- 上傳表單（登入後才顯示） -->
+        <form id="uploadForm" style="display: none;">
+            <div class="form-group">
+                <label for="songTitle">歌曲名稱 *</label>
+                <input type="text" id="songTitle" required placeholder="例如：小星星">
+            </div>
+
+            <div class="form-group">
+                <label for="part">聲部 *</label>
+                <select id="part" required>
+                    <option value="">請選擇聲部</option>
+                    <option value="part1">一部</option>
+                    <option value="part2">二部</option>
+                    <option value="part3">三部</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="midiFile">上傳 MIDI 主旋律檔案 *</label>
+                <div class="upload-box">
+                    <input type="file" id="midiFile" accept=".mid,.midi,audio/midi,audio/x-midi,application/x-midi" required>
+                    <p class="hint">支援格式：.mid, .midi</p>
+                </div>
+                <div class="file-info" id="midiInfo"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="accompFile">上傳伴奏音檔 *</label>
+                <div class="upload-box">
+                    <input type="file" id="accompFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm" required>
+                    <p class="hint">支援格式：MP3, WAV, M4A, AAC, OGG, WebM</p>
+                </div>
+                <div class="file-info" id="accompInfo"></div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="handleLogout()">登出</button>
+                <button type="submit" class="btn-primary" id="submitBtn">儲存歌曲</button>
+            </div>
+        </form>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="firebase-db.js"></script>
+
+    <script>
+        // 檢查登入狀態
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // 已登入，顯示上傳表單
+                document.getElementById('loginSection').style.display = 'none';
+                document.getElementById('uploadForm').style.display = 'block';
+                console.log('已登入:', user.email);
+            } else {
+                // 未登入，顯示登入表單
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('uploadForm').style.display = 'none';
+            }
+        });
+
+        // 處理登入
+        async function handleLogin() {
+            const email = document.getElementById('adminEmail').value.trim();
+            const password = document.getElementById('adminPassword').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginMessage = document.getElementById('loginMessage');
+
+            if (!email || !password) {
+                showLoginMessage('請輸入電子郵件和密碼', 'error');
+                return;
+            }
+
+            loginBtn.disabled = true;
+            loginBtn.textContent = '登入中...';
+
+            try {
+                await loginAdmin(email, password);
+                showLoginMessage('登入成功！', 'success');
+                // 登入狀態改變會自動切換頁面
+            } catch (error) {
+                console.error('登入失敗:', error);
+                let errorMsg = '登入失敗';
+                if (error.code === 'auth/user-not-found') errorMsg = '找不到此使用者';
+                else if (error.code === 'auth/wrong-password') errorMsg = '密碼錯誤';
+                else if (error.code === 'auth/invalid-email') errorMsg = '電子郵件格式不正確';
+                else if (error.code === 'auth/too-many-requests') errorMsg = '嘗試次數過多，請稍後再試';
+
+                showLoginMessage(errorMsg, 'error');
+                loginBtn.disabled = false;
+                loginBtn.textContent = '登入';
+            }
+        }
+
+        // 處理登出
+        async function handleLogout() {
+            if (confirm('確定要登出嗎？未儲存的資料將會遺失。')) {
+                await logoutAdmin();
+                window.location.href = 'index.html';
+            }
+        }
+
+        // 顯示登入訊息
+        function showLoginMessage(text, type) {
+            const loginMessage = document.getElementById('loginMessage');
+            loginMessage.textContent = text;
+            loginMessage.className = `status-message ${type} show`;
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    loginMessage.className = 'status-message';
+                }, 2000);
+            }
+        }
+
+        // 顯示檔案資訊
+        document.getElementById('midiFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const info = document.getElementById('midiInfo');
+            if (file) {
+                info.textContent = `✓ 已選擇：${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                info.classList.add('show');
+            }
+        });
+
+        document.getElementById('accompFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const info = document.getElementById('accompInfo');
+            if (file) {
+                info.textContent = `✓ 已選擇：${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                info.classList.add('show');
+            }
+        });
+
+        // 表單提交
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMessage = document.getElementById('statusMessage');
+
+            // 收集表單資料
+            const songData = {
+                title: document.getElementById('songTitle').value.trim(),
+                part: document.getElementById('part').value,
+                midiFile: document.getElementById('midiFile').files[0],
+                accompFile: document.getElementById('accompFile').files[0]
+            };
+
+            // 驗證
+            if (!songData.title || !songData.part) {
+                showMessage('請填寫所有必填欄位', 'error');
+                return;
+            }
+
+            if (!songData.midiFile || !songData.accompFile) {
+                showMessage('請上傳 MIDI 和伴奏檔案', 'error');
+                return;
+            }
+
+            // 停用按鈕
+            submitBtn.disabled = true;
+            submitBtn.textContent = '儲存中...';
+
+            try {
+                // 儲存到 localStorage
+                await saveSongToStorage(songData);
+
+                showMessage('歌曲儲存成功！3 秒後返回歌曲列表...', 'success');
+
+                // 3 秒後跳轉
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 3000);
+
+            } catch (error) {
+                console.error('儲存失敗:', error);
+                showMessage(`儲存失敗：${error.message}`, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '儲存歌曲';
+            }
+        });
+
+        // 儲存歌曲到 Firebase
+        async function saveSongToStorage(songData) {
+            // 檢查檔案大小（Firebase 免費方案建議單檔 < 50MB）
+            const midiSize = songData.midiFile.size;
+            const accompSize = songData.accompFile.size;
+            const totalSize = midiSize + accompSize;
+
+            if (totalSize > 50 * 1024 * 1024) {
+                throw new Error(`檔案過大！單首歌曲建議 < 50MB\nMIDI: ${(midiSize / 1024 / 1024).toFixed(2)} MB\n伴奏: ${(accompSize / 1024 / 1024).toFixed(2)} MB`);
+            }
+
+            // 將檔案轉換為 Base64
+            const midiBase64 = await fileToBase64(songData.midiFile);
+            const accompBase64 = await fileToBase64(songData.accompFile);
+
+            // 建立歌曲物件（Firebase 會上傳檔案並取得 URL）
+            const newSong = {
+                title: songData.title,
+                part: songData.part,
+                midiData: midiBase64,
+                accompData: accompBase64,
+                midiFileName: songData.midiFile.name,
+                accompFileName: songData.accompFile.name
+            };
+
+            // 儲存到 Firebase（會自動上傳檔案到 Storage 並在 Firestore 建立文件）
+            try {
+                const songId = await addSong(newSong);
+                console.log('歌曲已上傳到 Firebase，ID:', songId);
+
+                // 顯示儲存空間資訊
+                const storageInfo = await getStorageEstimate();
+                if (storageInfo) {
+                    console.log(storageInfo.message);
+                }
+            } catch (e) {
+                console.error('Firebase 儲存失敗:', e);
+                throw new Error(`儲存失敗：${e.message}\n\n請確認網路連線和 Firebase 設定是否正確。`);
+            }
+        }
+
+        // 將檔案轉換為 Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 顯示訊息
+        function showMessage(text, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = text;
+            statusMessage.className = `status-message ${type} show`;
+        }
+    </script>
+</body>
+</html>

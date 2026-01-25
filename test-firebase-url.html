@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>測試 Firebase Storage URL</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .test-result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        textarea {
+            width: 100%;
+            height: 100px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 測試 Firebase Storage URL</h1>
+        <p>這個工具可以幫助你測試 Firebase Storage 的 URL 是否可以正常訪問。</p>
+
+        <h2>步驟 1: 取得測試 URL</h2>
+        <ol>
+            <li>開啟 <a href="https://console.firebase.google.com/" target="_blank">Firebase Console</a></li>
+            <li>前往 Storage → Files</li>
+            <li>找到任一已上傳的檔案</li>
+            <li>點擊檔案，複製「下載 URL」或「Access token」</li>
+            <li>貼到下方測試欄位</li>
+        </ol>
+
+        <h2>步驟 2: 測試 URL</h2>
+        <textarea id="testURL" placeholder="貼上 Firebase Storage URL..."></textarea>
+        <button onclick="testURL()">測試 URL</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        async function testURL() {
+            const url = document.getElementById('testURL').value.trim();
+            const resultsDiv = document.getElementById('results');
+
+            if (!url) {
+                resultsDiv.innerHTML = '<div class="test-result error">請輸入 URL</div>';
+                return;
+            }
+
+            resultsDiv.innerHTML = '<div class="test-result">測試中...</div>';
+
+            try {
+                // 測試 1: 基本 fetch（不設定 CORS）
+                console.log('測試 1: 基本 fetch...');
+                const response1 = await fetch(url);
+                const result1 = `
+                    <h3>✅ 測試 1: 基本 fetch - 成功</h3>
+                    <p>Status: ${response1.status} ${response1.statusText}</p>
+                    <p>Content-Type: ${response1.headers.get('content-type')}</p>
+                    <p>Content-Length: ${response1.headers.get('content-length')} bytes</p>
+                `;
+
+                // 測試 2: 設定 CORS mode
+                console.log('測試 2: CORS mode fetch...');
+                const response2 = await fetch(url, { mode: 'cors' });
+                const result2 = `
+                    <h3>✅ 測試 2: CORS mode - 成功</h3>
+                    <p>CORS headers allowed</p>
+                `;
+
+                // 測試 3: 下載實際內容
+                console.log('測試 3: 下載內容...');
+                const response3 = await fetch(url);
+                const arrayBuffer = await response3.arrayBuffer();
+                const result3 = `
+                    <h3>✅ 測試 3: 下載內容 - 成功</h3>
+                    <p>Downloaded: ${arrayBuffer.byteLength} bytes</p>
+                `;
+
+                resultsDiv.innerHTML = `
+                    <div class="test-result success">
+                        ${result1}
+                        ${result2}
+                        ${result3}
+                        <h3>🎉 所有測試通過！</h3>
+                        <p>這個 URL 可以正常使用。CORS 設定正確。</p>
+                    </div>
+                `;
+
+            } catch (error) {
+                console.error('測試失敗:', error);
+                resultsDiv.innerHTML = `
+                    <div class="test-result error">
+                        <h3>❌ 測試失敗</h3>
+                        <p><strong>錯誤訊息:</strong> ${error.message}</p>
+                        <p><strong>錯誤名稱:</strong> ${error.name}</p>
+
+                        <h4>可能的原因:</h4>
+                        <ul>
+                            <li>Firebase Storage 安全規則未允許公開讀取</li>
+                            <li>CORS 設定未正確配置</li>
+                            <li>URL 已過期（token 過期）</li>
+                            <li>網路連線問題</li>
+                        </ul>
+
+                        <h4>解決方案:</h4>
+                        <ol>
+                            <li>檢查 Firebase Storage Rules:
+                                <pre>allow read: if true;</pre>
+                            </li>
+                            <li>確認已新增 CORS 設定 (gsutil cors set cors.json)</li>
+                            <li>重新產生 URL (getDownloadURL)</li>
+                        </ol>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

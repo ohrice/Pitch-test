@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>JG 音樂平台 - 音準測試系統</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --accent: #00d1b2;
+            --text: #ffffff;
+            --success: #48c774;
+            --warning: #ffdd57;
+            --danger: #f14668;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* 歌曲列表頁面 */
+        #songListPage {
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px 0;
+            background: #0a223a;
+            margin: -20px -20px 30px -20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+        }
+
+        .search-bar {
+            max-width: 600px;
+            margin: 0 auto 30px;
+            position: relative;
+        }
+
+        .search-bar input {
+            width: 100%;
+            padding: 15px 50px 15px 20px;
+            border: 2px solid #444;
+            border-radius: 30px;
+            background: var(--card-bg);
+            color: var(--text);
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        .search-bar input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .search-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #888;
+        }
+
+        .song-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .song-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .song-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,209,178,0.3);
+            border-color: var(--accent);
+        }
+
+        .song-card h3 {
+            margin: 0;
+            color: var(--accent);
+            font-size: 1.1em;
+        }
+
+        .song-card p {
+            margin: 5px 0;
+            color: #aaa;
+            font-size: 0.95em;
+        }
+
+        .song-card .artist {
+            font-weight: bold;
+            color: #ccc;
+        }
+
+        .song-card .difficulty {
+            display: inline-block;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        .difficulty.part1 {
+            background: rgba(72, 199, 116, 0.2);
+            color: var(--success);
+        }
+
+        .difficulty.part2 {
+            background: rgba(255, 221, 87, 0.2);
+            color: var(--warning);
+        }
+
+        .difficulty.part3 {
+            background: rgba(186, 85, 211, 0.25);
+            color: #da70d6;
+        }
+
+        /* 測試頁面 */
+        #testPage {
+            display: none;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .test-header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .test-header h2 {
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .back-btn {
+            padding: 10px 25px;
+            border-radius: 25px;
+            border: none;
+            background: #555;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: #666;
+        }
+
+        .test-container {
+            background: var(--card-bg);
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        /* 麥克風音量監控 */
+        .accuracy-meter {
+            background: rgba(0,0,0,0.3);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .meter-label {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: var(--accent);
+        }
+
+        .meter-bar {
+            position: relative;
+            height: 40px;
+            background: linear-gradient(to right,
+                var(--danger) 0%,
+                var(--warning) 35%,
+                var(--success) 50%,
+                var(--warning) 65%,
+                var(--danger) 100%);
+            border-radius: 20px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .meter-center-line {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 2px;
+            height: 100%;
+            background: white;
+            z-index: 1;
+        }
+
+        .meter-indicator {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 8px;
+            height: 100%;
+            background: white;
+            box-shadow: 0 0 10px rgba(255,255,255,0.8);
+            transform: translateX(-50%);
+            transition: left 0.1s ease-out;
+            z-index: 2;
+        }
+
+        .visualizer-container {
+            position: relative;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #444;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        button {
+            padding: 12px 30px;
+            border-radius: 25px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active { transform: scale(0.95); }
+        button:disabled { background: #555; cursor: not-allowed; }
+
+        .status-panel {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 5px;
+            font-size: 14px;
+            color: #aaa;
+        }
+
+        /* 結果面板 */
+        .results-panel {
+            margin-top: 20px;
+            padding: 20px;
+            background: rgba(0,209,178,0.1);
+            border: 2px solid var(--accent);
+            border-radius: 10px;
+            display: none;
+        }
+
+        .results-panel h3 {
+            text-align: center;
+            margin-top: 0;
+            color: var(--accent);
+        }
+
+        .score-display {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score-big {
+            font-size: 64px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        .score-label {
+            font-size: 18px;
+            color: #aaa;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--accent);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* 新增歌曲卡片 */
+        .add-song-card {
+            background: rgba(0,209,178,0.1) !important;
+            border: 2px dashed var(--accent) !important;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .add-song-card:hover {
+            background: rgba(0,209,178,0.2) !important;
+        }
+
+        /* 刪除按鈕 */
+        .delete-btn {
+            background: rgba(241, 70, 104, 0.2);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+        }
+
+        .delete-btn:hover {
+            background: rgba(241, 70, 104, 0.4);
+        }
+
+        /* 編輯按鈕 */
+        .edit-btn {
+            background: rgba(0, 209, 178, 0.2);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.2s;
+            margin-right: 5px;
+        }
+
+        .edit-btn:hover {
+            background: rgba(0, 209, 178, 0.4);
+        }
+
+        /* 管理員專用功能 - 預設隱藏 */
+        .admin-only {
+            display: none !important;
+        }
+
+        /* 登入按鈕 */
+        .admin-login-btn {
+            padding: 10px 20px;
+            border-radius: 25px;
+            border: 2px solid var(--accent);
+            background: transparent;
+            color: var(--accent);
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .admin-login-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* 登入模態框 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.7);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            margin: 10% auto;
+            padding: 30px;
+            border: 2px solid var(--accent);
+            border-radius: 15px;
+            width: 90%;
+            max-width: 400px;
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(-50px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 1;
+        }
+
+        .close:hover {
+            color: white;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #aaa;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: white;
+            font-size: 16px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+
+        .login-btn:hover {
+            opacity: 0.9;
+        }
+
+        .error-message {
+            color: var(--danger);
+            margin-top: 10px;
+            font-size: 14px;
+            display: none;
+        }
+
+        /* LINE 瀏覽器警告 */
+        .line-warning-modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.9);
+        }
+
+        .line-warning-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 15% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .line-warning-icon {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .line-warning-content h2 {
+            margin: 0 0 15px 0;
+            color: white;
+            font-size: 24px;
+        }
+
+        .line-warning-content p {
+            color: rgba(255,255,255,0.9);
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .open-browser-btn {
+            display: inline-block;
+            padding: 15px 30px;
+            background: white;
+            color: #667eea;
+            border: none;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            text-decoration: none;
+            transition: transform 0.2s;
+            margin-bottom: 10px;
+        }
+
+        .open-browser-btn:active {
+            transform: scale(0.95);
+        }
+
+        .dismiss-warning-btn {
+            display: block;
+            margin: 10px auto 0;
+            padding: 10px 20px;
+            background: transparent;
+            color: rgba(255,255,255,0.7);
+            border: 2px solid rgba(255,255,255,0.5);
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            .song-grid {
+                grid-template-columns: 1fr;
+            }
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            canvas {
+                height: 300px !important;
+            }
+            .test-header {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 歌曲列表頁面 -->
+    <div id="songListPage">
+        <div class="header">
+            <div style="position: absolute; top: 20px; right: 20px;">
+                <button id="adminLoginBtn" class="admin-login-btn" onclick="openLoginModal()">🔐 管理員登入</button>
+                <button id="adminLogoutBtn" class="admin-login-btn admin-only" onclick="handleLogout()" style="border-color: var(--danger); color: var(--danger);">登出</button>
+            </div>
+            <h1>🎵 JG 音樂平台</h1>
+            <p>選擇您喜愛的歌曲，開始音準測試之旅</p>
+        </div>
+
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="搜尋歌曲...">
+            <span class="search-icon">🔍</span>
+        </div>
+
+        <div style="max-width: 1400px; margin: 0 auto 20px; text-align: center;">
+            <button id="addSongBtn" class="admin-only" onclick="window.location.href='upload.html'" style="padding: 15px 30px; border-radius: 30px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 16px; white-space: nowrap; transition: transform 0.1s;">➕ 新增歌曲</button>
+        </div>
+
+        <!-- 一部歌曲 -->
+        <div style="max-width: 1400px; margin: 0 auto 40px;">
+            <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 1.5em;">🎵 一部</h3>
+            <div class="song-grid" id="songGridPart1">
+                <div style="grid-column: 1/-1; text-align: center; color: #aaa; padding: 20px;">尚無歌曲</div>
+            </div>
+        </div>
+
+        <!-- 二部歌曲 -->
+        <div style="max-width: 1400px; margin: 0 auto 40px;">
+            <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 1.5em;">🎵 二部</h3>
+            <div class="song-grid" id="songGridPart2">
+                <div style="grid-column: 1/-1; text-align: center; color: #aaa; padding: 20px;">尚無歌曲</div>
+            </div>
+        </div>
+
+        <!-- 三部歌曲 -->
+        <div style="max-width: 1400px; margin: 0 auto 40px;">
+            <h3 style="color: var(--accent); margin-bottom: 15px; font-size: 1.5em;">🎵 三部</h3>
+            <div class="song-grid" id="songGridPart3">
+                <div style="grid-column: 1/-1; text-align: center; color: #aaa; padding: 20px;">尚無歌曲</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 音準測試頁面 -->
+    <div id="testPage">
+        <div class="test-header">
+            <div>
+                <h2 id="currentSongTitle">歌曲名稱</h2>
+                <p id="currentSongArtist" style="margin: 5px 0 0 0; color: #aaa;">歌手名稱</p>
+            </div>
+            <button class="back-btn" onclick="backToSongList()">← 返回歌曲列表</button>
+        </div>
+
+        <div class="test-container">
+            <!-- 麥克風音量監控 -->
+            <div class="accuracy-meter" style="margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                    <div class="meter-label" style="margin-bottom: 0;">麥克風音量</div>
+                    <button id="testMicBtn" style="padding: 6px 15px; font-size: 14px; background: #3273dc;">測試麥克風</button>
+                </div>
+                <div style="background: rgba(0,0,0,0.3); height: 30px; border-radius: 5px; overflow: hidden; position: relative;">
+                    <div id="volumeMeter" style="height: 100%; width: 0%; background: linear-gradient(90deg, #48c774, #ffdd57, #f14668); transition: width 0.1s;"></div>
+                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold;" id="volumeText">0%</div>
+                </div>
+            </div>
+
+            <!-- 即時音準指示器 -->
+            <div class="accuracy-meter">
+                <div class="meter-label">即時音準</div>
+                <div class="meter-bar">
+                    <div class="meter-indicator" id="accuracyMeter"></div>
+                    <div class="meter-center-line"></div>
+                </div>
+            </div>
+
+            <div class="visualizer-container" style="display: flex; gap: 0;">
+                <canvas id="pitchAxis" style="width: 60px; height: 400px; flex-shrink: 0;"></canvas>
+                <canvas id="pianoRoll" style="flex-grow: 1;"></canvas>
+            </div>
+
+            <div class="controls">
+                <button onclick="backToSongList()" style="background: #555;">← 返回歌曲列表</button>
+                <button id="startBtn">開始測試</button>
+                <button id="stopBtn" style="background: #ff3860;">停止</button>
+            </div>
+
+            <div class="status-panel" id="statusText">
+                狀態：準備就緒
+            </div>
+
+            <!-- 測試結果面板 -->
+            <div class="results-panel" id="resultsPanel">
+                <h3>📊 測試結果</h3>
+                <div class="score-display">
+                    <div class="score-big" id="finalScore">-</div>
+                    <div class="score-label">總分</div>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-value" id="avgAccuracy">-</div>
+                        <div class="stat-label">平均準確度</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="perfectNotes">-</div>
+                        <div class="stat-label">完美音符數</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="goodNotes">-</div>
+                        <div class="stat-label">良好音符數</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="poorNotes">-</div>
+                        <div class="stat-label">需改進音符數</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理員登入模態框 -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>🔐 管理員登入</h2>
+                <span class="close" onclick="closeLoginModal()">&times;</span>
+            </div>
+            <form id="loginForm" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="adminEmail">電子郵件</label>
+                    <input type="email" id="adminEmail" required autocomplete="username">
+                </div>
+                <div class="form-group">
+                    <label for="adminPassword">密碼</label>
+                    <input type="password" id="adminPassword" required autocomplete="current-password">
+                </div>
+                <button type="submit" class="login-btn">登入</button>
+                <div id="loginError" class="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- LINE 瀏覽器警告模態框 -->
+    <div id="lineWarningModal" class="line-warning-modal">
+        <div class="line-warning-content">
+            <div class="line-warning-icon">⚠️</div>
+            <h2>偵測到 LINE 內建瀏覽器</h2>
+            <p>LINE 內建瀏覽器可能無法使用麥克風功能。<br><br>
+            為了完整體驗音準測試功能，請點擊下方按鈕在外部瀏覽器中開啟：</p>
+            <button class="open-browser-btn" onclick="openInExternalBrowser()">
+                🌐 在瀏覽器中開啟
+            </button>
+            <button class="dismiss-warning-btn" onclick="dismissLineWarning()">
+                我知道了，繼續使用
+            </button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="firebase-db.js"></script>
+    <script src="pitch-test-engine.js"></script>
+    <script src="app.js"></script>
+    <script>
+        const canvas = document.getElementById('pianoRoll');
+        const ctx = canvas.getContext('2d');
+        const axisCanvas = document.getElementById('pitchAxis');
+        const axisCtx = axisCanvas.getContext('2d');
+
+        function resizeCanvas() {
+            canvas.width = canvas.clientWidth;
+            canvas.height = canvas.clientHeight;
+
+            axisCanvas.width = 60;
+            axisCanvas.height = canvas.clientHeight;
+
+            if (typeof melodyTemplate !== 'undefined' && melodyTemplate.length > 0) {
+                renderPianoRoll();
+            }
+            renderPitchAxis();
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // LINE 瀏覽器偵測
+        function isLineApp() {
+            const ua = navigator.userAgent.toLowerCase();
+            return ua.includes('line/') || ua.includes('line app');
+        }
+
+        function openInExternalBrowser() {
+            // 在 LINE 中，複製當前 URL 並提示用戶
+            const currentUrl = window.location.href;
+
+            // 嘗試使用 LINE 的 URL scheme 打開外部瀏覽器
+            const externalUrl = currentUrl.replace(/^https?:\/\//, '');
+            window.location.href = `line://external-browser/${externalUrl}`;
+
+            // 如果上面的方法不起作用，提供替代方案
+            setTimeout(() => {
+                alert('請點擊右上角選單（⋯）\n選擇「在瀏覽器中開啟」\n\n或複製以下網址到 Safari/Chrome：\n' + currentUrl);
+            }, 500);
+        }
+
+        function dismissLineWarning() {
+            document.getElementById('lineWarningModal').style.display = 'none';
+            // 儲存用戶選擇，避免重複顯示
+            sessionStorage.setItem('lineWarningDismissed', 'true');
+        }
+
+        // 頁面載入時檢查是否為 LINE 瀏覽器
+        window.addEventListener('load', () => {
+            const dismissed = sessionStorage.getItem('lineWarningDismissed');
+            if (isLineApp() && !dismissed) {
+                // 延遲顯示，確保頁面已載入
+                setTimeout(() => {
+                    document.getElementById('lineWarningModal').style.display = 'block';
+                }, 1000);
+            }
+        });
+
+        // 管理員登入相關功能
+        function openLoginModal() {
+            document.getElementById('loginModal').style.display = 'block';
+        }
+
+        function closeLoginModal() {
+            document.getElementById('loginModal').style.display = 'none';
+            document.getElementById('loginError').style.display = 'none';
+            document.getElementById('loginForm').reset();
+        }
+
+        // 點擊模態框外部關閉
+        window.onclick = function(event) {
+            const modal = document.getElementById('loginModal');
+            if (event.target === modal) {
+                closeLoginModal();
+            }
+        }
+
+        // 處理登入
+        async function handleLogin(event) {
+            event.preventDefault();
+
+            const email = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminPassword').value;
+            const errorDiv = document.getElementById('loginError');
+
+            try {
+                await loginAdmin(email, password);
+                closeLoginModal();
+                alert('登入成功！');
+            } catch (error) {
+                console.error('登入錯誤:', error);
+                errorDiv.textContent = '登入失敗：' + (error.message || '請檢查帳號密碼');
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 處理登出
+        async function handleLogout() {
+            if (confirm('確定要登出嗎？')) {
+                try {
+                    await logoutAdmin();
+                    alert('已登出');
+                } catch (error) {
+                    console.error('登出錯誤:', error);
+                    alert('登出失敗：' + error.message);
+                }
+            }
+        }
+
+        // 更新管理員功能顯示狀態
+        function updateAdminUI() {
+            const isAdmin = currentUser !== null;
+            const adminElements = document.querySelectorAll('.admin-only');
+            const loginBtn = document.getElementById('adminLoginBtn');
+            const logoutBtn = document.getElementById('adminLogoutBtn');
+
+            // 顯示/隱藏管理員專用功能
+            adminElements.forEach(el => {
+                if (isAdmin) {
+                    el.classList.remove('admin-only');
+                } else {
+                    el.classList.add('admin-only');
+                }
+            });
+
+            // 切換登入/登出按鈕
+            if (isAdmin) {
+                loginBtn.style.display = 'none';
+                logoutBtn.style.display = 'inline-block';
+            } else {
+                loginBtn.style.display = 'inline-block';
+                logoutBtn.style.display = 'none';
+            }
+        }
+
+        // 監聽 Firebase 登入狀態變化（在 firebase-config.js 中的 onAuthStateChanged 之後執行）
+        // 使用 MutationObserver 或定期檢查來更新 UI
+        setInterval(() => {
+            updateAdminUI();
+        }, 500);
+
+        // 頁面載入時初始化 UI
+        window.addEventListener('load', () => {
+            updateAdminUI();
+        });
+    </script>
+</body>
+</html>

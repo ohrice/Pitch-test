@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>編輯歌曲 - JG 音樂平台</title>
+    <style>
+        :root {
+            --primary-bg: #1a1a1a;
+            --card-bg: #2d2d2d;
+            --accent: #00d1b2;
+            --text: #ffffff;
+            --success: #48c774;
+            --warning: #ffdd57;
+            --danger: #f14668;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: var(--accent);
+        }
+
+        input[type="text"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #444;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.3);
+            color: var(--text);
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        input[type="text"]:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .upload-box {
+            border: 2px dashed #555;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            transition: border-color 0.3s;
+            margin-top: 10px;
+        }
+
+        .upload-box:hover {
+            border-color: var(--accent);
+        }
+
+        input[type="file"] {
+            width: 100%;
+            padding: 10px;
+            color: #888;
+            cursor: pointer;
+            border: 1px solid #555;
+            border-radius: 5px;
+            background: rgba(0,0,0,0.3);
+        }
+
+        .file-info {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(0,209,178,0.1);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .current-file {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255,221,87,0.1);
+            border-radius: 5px;
+            font-size: 14px;
+            color: var(--warning);
+        }
+
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        button {
+            flex: 1;
+            padding: 15px;
+            border-radius: 25px;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        button:active {
+            transform: scale(0.95);
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: #555;
+            color: white;
+        }
+
+        .status-message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+
+        .status-message.success {
+            background: rgba(72, 199, 116, 0.2);
+            color: var(--success);
+            border: 2px solid var(--success);
+        }
+
+        .status-message.error {
+            background: rgba(241, 70, 104, 0.2);
+            color: var(--danger);
+            border: 2px solid var(--danger);
+        }
+
+        .status-message.show {
+            display: block;
+        }
+
+        .hint {
+            font-size: 14px;
+            color: #aaa;
+            margin-top: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: var(--accent);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            .buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✏️ 編輯歌曲</h1>
+
+        <div id="loadingSection" class="loading">
+            載入中...
+        </div>
+
+        <!-- 編輯表單 -->
+        <form id="editForm" style="display: none;">
+            <div class="form-group">
+                <label for="songTitle">歌曲名稱 *</label>
+                <input type="text" id="songTitle" required placeholder="例如：小星星">
+            </div>
+
+            <div class="form-group">
+                <label for="part">聲部 *</label>
+                <select id="part" required>
+                    <option value="">請選擇聲部</option>
+                    <option value="part1">一部</option>
+                    <option value="part2">二部</option>
+                    <option value="part3">三部</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="midiFile">上傳新的 MIDI 主旋律檔案（選填）</label>
+                <div class="current-file" id="currentMidiFile"></div>
+                <div class="upload-box">
+                    <input type="file" id="midiFile" accept=".mid,.midi,audio/midi,audio/x-midi,application/x-midi">
+                    <p class="hint">留空則保持原有檔案。支援格式：.mid, .midi</p>
+                </div>
+                <div class="file-info" id="midiInfo" style="display: none;"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="accompFile">上傳新的伴奏音檔（選填）</label>
+                <div class="current-file" id="currentAccompFile"></div>
+                <div class="upload-box">
+                    <input type="file" id="accompFile" accept="audio/*,.mp3,.wav,.m4a,.aac,.ogg,.webm">
+                    <p class="hint">留空則保持原有檔案。支援格式：MP3, WAV, M4A, AAC, OGG, WebM</p>
+                </div>
+                <div class="file-info" id="accompInfo" style="display: none;"></div>
+            </div>
+
+            <div class="buttons">
+                <button type="button" class="btn-secondary" onclick="window.location.href='index.html'">取消</button>
+                <button type="submit" class="btn-primary" id="submitBtn">儲存變更</button>
+            </div>
+        </form>
+
+        <div class="status-message" id="statusMessage"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script src="firebase-config.js"></script>
+    <script src="firebase-db.js"></script>
+
+    <script>
+        let songId = null;
+        let currentSong = null;
+
+        // 從 URL 取得歌曲 ID
+        const urlParams = new URLSearchParams(window.location.search);
+        songId = urlParams.get('id');
+
+        if (!songId) {
+            showMessage('錯誤：未指定歌曲 ID', 'error');
+            setTimeout(() => {
+                window.location.href = 'index.html';
+            }, 2000);
+        }
+
+        // 檢查登入狀態
+        auth.onAuthStateChanged(async (user) => {
+            if (!user) {
+                // 未登入，返回首頁
+                alert('請先登入才能編輯歌曲！');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // 已登入，載入歌曲資料
+            await loadSongData();
+        });
+
+        // 載入歌曲資料
+        async function loadSongData() {
+            try {
+                currentSong = await getSong(songId);
+
+                if (!currentSong) {
+                    throw new Error('找不到此歌曲');
+                }
+
+                // 填入表單
+                document.getElementById('songTitle').value = currentSong.title || '';
+                document.getElementById('part').value = currentSong.part || '';
+
+                // 顯示目前檔案
+                document.getElementById('currentMidiFile').textContent =
+                    `目前檔案：${currentSong.midiFileName || '未知'}`;
+                document.getElementById('currentAccompFile').textContent =
+                    `目前檔案：${currentSong.accompFileName || '未知'}`;
+
+                // 顯示表單，隱藏載入中
+                document.getElementById('loadingSection').style.display = 'none';
+                document.getElementById('editForm').style.display = 'block';
+
+            } catch (error) {
+                console.error('載入歌曲失敗:', error);
+                showMessage(`載入失敗：${error.message}`, 'error');
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+            }
+        }
+
+        // 顯示檔案資訊
+        document.getElementById('midiFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const info = document.getElementById('midiInfo');
+            if (file) {
+                info.textContent = `✓ 新檔案：${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+                info.style.display = 'block';
+            }
+        });
+
+        document.getElementById('accompFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            const info = document.getElementById('accompInfo');
+            if (file) {
+                info.textContent = `✓ 新檔案：${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+                info.style.display = 'block';
+            }
+        });
+
+        // 表單提交
+        document.getElementById('editForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById('submitBtn');
+
+            // 收集表單資料
+            const newTitle = document.getElementById('songTitle').value.trim();
+            const newPart = document.getElementById('part').value;
+            const newMidiFile = document.getElementById('midiFile').files[0];
+            const newAccompFile = document.getElementById('accompFile').files[0];
+
+            // 驗證
+            if (!newTitle || !newPart) {
+                showMessage('請填寫所有必填欄位', 'error');
+                return;
+            }
+
+            // 停用按鈕
+            submitBtn.disabled = true;
+            submitBtn.textContent = '儲存中...';
+
+            try {
+                // 準備更新資料
+                const updates = {
+                    title: newTitle,
+                    part: newPart
+                };
+
+                // 如果有新的 MIDI 檔案
+                if (newMidiFile) {
+                    const midiBase64 = await fileToBase64(newMidiFile);
+                    updates.midiData = midiBase64;
+                    updates.midiFileName = newMidiFile.name;
+                }
+
+                // 如果有新的伴奏檔案
+                if (newAccompFile) {
+                    const accompBase64 = await fileToBase64(newAccompFile);
+                    updates.accompData = accompBase64;
+                    updates.accompFileName = newAccompFile.name;
+                }
+
+                // 更新歌曲
+                await updateSong(songId, updates);
+
+                showMessage('更新成功！2 秒後返回歌曲列表...', 'success');
+
+                // 2 秒後跳轉
+                setTimeout(() => {
+                    window.location.href = 'index.html';
+                }, 2000);
+
+            } catch (error) {
+                console.error('更新失敗:', error);
+                showMessage(`更新失敗：${error.message}`, 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '儲存變更';
+            }
+        });
+
+        // 將檔案轉換為 Base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // 顯示訊息
+        function showMessage(text, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = text;
+            statusMessage.className = `status-message ${type} show`;
+        }
+    </script>
+</body>
+</html>
