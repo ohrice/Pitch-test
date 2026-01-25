@@ -246,6 +246,17 @@ function downloadFileAsBlob(url, mimeType) {
         xhr.open('GET', url, true);
         xhr.responseType = 'blob';
 
+        // 顯示下載進度
+        xhr.onprogress = function(event) {
+            if (event.lengthComputable) {
+                const percentComplete = Math.round((event.loaded / event.total) * 100);
+                const statusText = document.getElementById('statusText');
+                if (statusText) {
+                    statusText.innerText = `狀態：下載中... ${percentComplete}%`;
+                }
+            }
+        };
+
         xhr.onload = function() {
             if (xhr.status === 200) {
                 resolve(xhr.response);
@@ -255,14 +266,14 @@ function downloadFileAsBlob(url, mimeType) {
         };
 
         xhr.onerror = function() {
-            reject(new Error('網路錯誤，無法下載檔案'));
+            reject(new Error('網路錯誤，請檢查網路連線'));
         };
 
         xhr.ontimeout = function() {
-            reject(new Error('下載超時'));
+            reject(new Error('下載超時，請檢查網路速度或稍後再試'));
         };
 
-        xhr.timeout = 60000; // 60 秒超時
+        xhr.timeout = 180000; // 增加到 180 秒（3 分鐘）
         xhr.send();
     });
 }
