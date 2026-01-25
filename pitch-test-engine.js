@@ -308,23 +308,89 @@ function parseMIDI(arrayBuffer) {
     }
 
     // 將 MIDI ticks 轉換為秒
-    // 使用從 MIDI 檔案讀取的實際速度，如果沒有則使用預設 120 BPM
     const ticksPerQuarterNote = division;
 
-    // 使用第一個找到的 tempo，如果沒有則使用預設值
-    const effectiveTempo = firstTempo !== null ? firstTempo : tempo;
-
     console.log(`速度變化次數: ${tempoChanges.length}`);
-    console.log(`使用 Tempo: ${Math.round(60000000 / effectiveTempo)} BPM${firstTempo !== null ? ' (使用第一個 tempo)' : ' (使用預設值)'}`);
 
-    // 簡化版本：假設速度不變（大多數 MIDI 檔案都是固定速度）
-    const secondsPerTick = (effectiveTempo / 1000000) / ticksPerQuarterNote;
+    // 如果沒有 tempo 變化，使用預設或第一個 tempo
+    if (tempoChanges.length === 0) {
+        const effectiveTempo = firstTempo !== null ? firstTempo : tempo;
+        console.log(`使用固定 Tempo: ${Math.round(60000000 / effectiveTempo)} BPM`);
 
+        const secondsPerTick = (effectiveTempo / 1000000) / ticksPerQuarterNote;
+
+        const notesInSeconds = notes.map(n => ({
+            note: n.note,
+            startTime: n.startTime * secondsPerTick,
+            endTime: n.endTime * secondsPerTick,
+            duration: n.duration * secondsPerTick
+        }));
+
+        // 排序音符
+        notesInSeconds.sort((a, b) => a.startTime - b.startTime);
+
+        if (notesInSeconds.length > 0) {
+            console.log(`時間範圍: ${notesInSeconds[0].startTime.toFixed(2)} - ${notesInSeconds[notesInSeconds.length - 1]?.endTime.toFixed(2)} 秒`);
+        }
+
+        return notesInSeconds;
+    }
+
+    // 有多個 tempo 變化，需要分段計算
+    console.log(`檢測到多段速度變化，使用精確計算模式`);
+
+    // 確保 tempo 變化按時間排序
+    tempoChanges.sort((a, b) => a.time - b.time);
+
+    // 顯示所有 tempo 變化
+    tempoChanges.forEach((tc, i) => {
+        console.log(`  區間 ${i + 1}: tick ${tc.time}, ${Math.round(60000000 / tc.tempo)} BPM`);
+    });
+
+    // 將 tick 轉換為秒的函數（考慮多段 tempo）
+    function ticksToSeconds(ticks) {
+        if (ticks === 0) return 0;
+
+        let seconds = 0;
+        let currentTick = 0;
+        let currentTempo = tempoChanges[0].tempo; // 使用第一個 tempo 作為初始值
+
+        for (let i = 0; i < tempoChanges.length; i++) {
+            const changePoint = tempoChanges[i].time;
+            const newTempo = tempoChanges[i].tempo;
+
+            // 如果目標 tick 在當前變化點之前
+            if (ticks < changePoint) {
+                const ticksInSegment = ticks - currentTick;
+                const secondsPerTick = (currentTempo / 1000000) / ticksPerQuarterNote;
+                seconds += ticksInSegment * secondsPerTick;
+                return seconds;
+            }
+
+            // 累加從 currentTick 到 changePoint 的時間（使用當前 tempo）
+            const ticksInSegment = changePoint - currentTick;
+            const secondsPerTick = (currentTempo / 1000000) / ticksPerQuarterNote;
+            seconds += ticksInSegment * secondsPerTick;
+
+            // 更新到下一個區間
+            currentTick = changePoint;
+            currentTempo = newTempo;
+        }
+
+        // 處理最後一個 tempo 變化之後的部分
+        const remainingTicks = ticks - currentTick;
+        const secondsPerTick = (currentTempo / 1000000) / ticksPerQuarterNote;
+        seconds += remainingTicks * secondsPerTick;
+
+        return seconds;
+    }
+
+    // 使用新的轉換函數計算每個音符的時間
     const notesInSeconds = notes.map(n => ({
         note: n.note,
-        startTime: n.startTime * secondsPerTick,
-        endTime: n.endTime * secondsPerTick,
-        duration: n.duration * secondsPerTick
+        startTime: ticksToSeconds(n.startTime),
+        endTime: ticksToSeconds(n.endTime),
+        duration: ticksToSeconds(n.endTime) - ticksToSeconds(n.startTime)
     }));
 
     // 排序音符
