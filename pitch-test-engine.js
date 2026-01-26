@@ -12,6 +12,9 @@ let accuracyScores = [];
 let testStartTimestamp = null; // 記錄測試開始時間（用於計算測試時長）
 let noteScores = {}; // 記錄每個音符的所有採樣分數 { noteIndex: [score1, score2, ...] }
 
+// 音訊延遲補償（秒）- 麥克風處理延遲約 100-150ms
+const AUDIO_LATENCY_COMPENSATION = 0.12; // 120ms 補償
+
 // 錄音相關變數
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -1358,22 +1361,27 @@ if (startBtn) {
             const accompGain = audioCtx.createGain();
             accompGain.gain.value = 0.4; // 伴奏降至 40%
 
+            // 建立伴奏延遲節點（補償麥克風處理延遲）
+            const accompDelay = audioCtx.createDelay(1.0);
+            accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 120ms
+
             // 建立麥克風增益節點（大幅放大人聲）
             const micGain = audioCtx.createGain();
             micGain.gain.value = 5.0; // 麥克風放大 5 倍
 
-            // 伴奏 → 增益 → 混音輸出
+            // 伴奏 → 增益 → 延遲 → 混音輸出
             sourceNode.connect(accompGain);
-            accompGain.connect(destination);
+            accompGain.connect(accompDelay);
+            accompDelay.connect(destination);
 
-            // 麥克風 → 增益 → 混音輸出
+            // 麥克風 → 增益 → 混音輸出（無延遲）
             const micSource = audioCtx.createMediaStreamSource(micStream);
             micSource.connect(micGain);
             micGain.connect(destination);
 
             mixedStream = destination.stream;
 
-            console.log('✅ 錄音混音設定：伴奏 40%, 麥克風 500%');
+            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 500%`);
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
@@ -1611,7 +1619,9 @@ function update() {
 
             // 只記錄準確度在合理範圍內的音符
             if (accuracy > 0) {
-                userPitchData.push({ time: now, note: midiNote, accuracy: accuracy });
+                // 套用延遲補償：將偵測時間往前調整，對齊伴奏時間軸
+                const compensatedTime = now - AUDIO_LATENCY_COMPENSATION;
+                userPitchData.push({ time: compensatedTime, note: midiNote, accuracy: accuracy });
             }
         } else {
             // 沒有目標音符時，只更新指示器，不記錄數據
