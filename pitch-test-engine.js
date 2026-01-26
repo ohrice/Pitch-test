@@ -8,6 +8,8 @@ let micStream;
 let startTime;
 let isPlaying = false;
 let accuracyScores = [];
+let testStartTimestamp = null; // 記錄測試開始時間（用於計算測試時長）
+let noteScores = {}; // 記錄每個音符的所有採樣分數 { noteIndex: [score1, score2, ...] }
 
 // 錄音相關變數
 let mediaRecorder = null;
@@ -768,27 +770,58 @@ function renderPianoRoll(currentTime = -1) {
 
 // 計算最終結果
 function calculateFinalResults() {
+    // 如果沒有任何採樣點，返回空結果
     if (accuracyScores.length === 0) {
         return {
             avgAccuracy: 0,
             finalScore: 0,
             perfectNotes: 0,
             goodNotes: 0,
-            poorNotes: 0
+            poorNotes: 0,
+            totalNotes: melodyTemplate.length
         };
     }
 
+    // 計算整體平均準確率（使用所有採樣點）
     const avgAccuracy = accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length;
-    const perfectNotes = accuracyScores.filter(s => s >= 90).length;
-    const goodNotes = accuracyScores.filter(s => s >= 50 && s < 90).length;
-    const poorNotes = accuracyScores.filter(s => s < 50).length;
+
+    // 基於音符的評分
+    let perfectNotes = 0;
+    let goodNotes = 0;
+    let poorNotes = 0;
+    let scoredNotes = 0;
+
+    // 為每個 MIDI 音符計算平均分數
+    for (let i = 0; i < melodyTemplate.length; i++) {
+        if (noteScores[i] && noteScores[i].length > 0) {
+            // 計算該音符所有採樣點的平均分數
+            const noteAvg = noteScores[i].reduce((a, b) => a + b, 0) / noteScores[i].length;
+            scoredNotes++;
+
+            // 根據平均分數分類
+            if (noteAvg >= 90) {
+                perfectNotes++;
+            } else if (noteAvg >= 50) {
+                goodNotes++;
+            } else {
+                poorNotes++;
+            }
+        } else {
+            // 沒有評分的音符視為 poor（用戶沒唱到或沒被偵測到）
+            poorNotes++;
+        }
+    }
+
+    console.log(`📊 評分統計: 總音符=${melodyTemplate.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
 
     return {
         avgAccuracy: avgAccuracy.toFixed(1),
         finalScore: Math.round(avgAccuracy),
         perfectNotes,
         goodNotes,
-        poorNotes
+        poorNotes,
+        totalNotes: melodyTemplate.length,
+        scoredNotes // 實際評分的音符數
     };
 }
 
@@ -842,8 +875,63 @@ function displayResults() {
 
     document.getElementById('resultsPanel').style.display = 'block';
 
+    // 儲存練習紀錄
+    savePracticeToLocalStorage(results);
+
     // 滾動到結果區域
     document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth' });
+}
+
+// 儲存練習紀錄到 localStorage
+function savePracticeToLocalStorage(results) {
+    // 檢查是否有 currentSong（從 app.js 傳入的全域變數）
+    if (typeof currentSong === 'undefined' || !currentSong) {
+        console.log('⚠️ 無法儲存紀錄：找不到當前歌曲資訊');
+        return;
+    }
+
+    // 計算測試時長
+    const duration = testStartTimestamp ? Math.round((Date.now() - testStartTimestamp) / 1000) : 0;
+
+    // 建立紀錄物件
+    const record = {
+        songId: currentSong.id,
+        songTitle: currentSong.title,
+        timestamp: new Date().toISOString(),
+        accuracy: results.finalScore,
+        avgAccuracy: parseFloat(results.avgAccuracy),
+        duration: duration,
+        perfectNotes: results.perfectNotes,
+        goodNotes: results.goodNotes,
+        poorNotes: results.poorNotes,
+        totalNotes: results.perfectNotes + results.goodNotes + results.poorNotes
+    };
+
+    // 呼叫 practice-records.js 的儲存函數
+    if (typeof savePracticeRecord === 'function') {
+        const saved = savePracticeRecord(record);
+        if (saved) {
+            console.log('✅ 練習紀錄已儲存');
+            // 更新 UI 顯示（如果有最佳成績提示）
+            updateRecordHints(record);
+        }
+    } else {
+        console.error('❌ 找不到 savePracticeRecord 函數，請確認已載入 practice-records.js');
+    }
+}
+
+// 更新紀錄提示
+function updateRecordHints(record) {
+    // 檢查是否為新的最佳成績
+    const bestScore = typeof getBestScore === 'function' ? getBestScore(record.songId) : null;
+
+    if (bestScore !== null && record.accuracy >= bestScore) {
+        // 顯示新紀錄提示
+        const statusText = document.getElementById('statusText');
+        if (statusText) {
+            statusText.innerText = `狀態：測試完成！🎉 恭喜！這是您的最佳成績！`;
+        }
+    }
 }
 
 // 3. 事件綁定
@@ -1196,6 +1284,7 @@ if (startBtn) {
     // 重置
     userPitchData = [];
     accuracyScores = [];
+    noteScores = {}; // 重置音符評分記錄
     pitchHistory = []; // 重置音高歷史
     document.getElementById('resultsPanel').style.display = 'none';
 
@@ -1283,6 +1372,7 @@ if (startBtn) {
     // 開始播放
     sourceNode.start(0);
     startTime = audioCtx.currentTime;
+    testStartTimestamp = Date.now(); // 記錄測試開始時間
     isPlaying = true;
 
     // Safari on iPad: 確保播放開始後 context 保持活躍
@@ -1372,7 +1462,16 @@ function update() {
             const deviation = calculateDeviation(midiNote, targetNote.note);
             accuracy = calculateAccuracy(deviation);
 
-            // 只記錄有目標音符時的分數
+            // 將分數對應到對應的音符
+            const targetNoteIndex = melodyTemplate.findIndex(n => n === targetNote);
+            if (targetNoteIndex >= 0) {
+                if (!noteScores[targetNoteIndex]) {
+                    noteScores[targetNoteIndex] = [];
+                }
+                noteScores[targetNoteIndex].push(accuracy);
+            }
+
+            // 仍然記錄所有採樣點用於計算整體平均準確率
             accuracyScores.push(accuracy);
 
             // 更新即時指示器
