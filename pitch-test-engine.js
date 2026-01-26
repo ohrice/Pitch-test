@@ -422,39 +422,49 @@ function filterOverlappingNotes(notes) {
 
     for (let i = 0; i < sorted.length; i++) {
         const currentNote = { ...sorted[i] }; // 複製以便修改
+        let shouldKeep = true;
 
-        // 保留所有音符（包括和弦中的所有音符），不再過濾低音
+        // 過濾和弦：如果有同時開始的更高音符，則過濾掉當前音符
+        for (let j = 0; j < sorted.length; j++) {
+            if (i === j) continue;
+            const otherNote = sorted[j];
+            const timeDiff = Math.abs(currentNote.startTime - otherNote.startTime);
 
-        // 找到下一個不是和弦的音符（開始時間明顯不同）
-        let nextNonChordNote = null;
-        for (let j = i + 1; j < sorted.length; j++) {
-            const timeDiff = Math.abs(sorted[j].startTime - currentNote.startTime);
-            if (timeDiff >= startTimeThreshold) {
-                // 這是下一個不同時開始的音符（不是和弦的一部分）
-                nextNonChordNote = sorted[j];
+            // 如果同時開始且有更高音，過濾掉當前音符（只保留主旋律）
+            if (timeDiff < startTimeThreshold && otherNote.note > currentNote.note) {
+                shouldKeep = false;
                 break;
             }
         }
 
-        // 如果當前音符的結束時間超過下一個非和弦音符的開始時間（legato）
-        if (nextNonChordNote && currentNote.endTime > nextNonChordNote.startTime) {
-            const originalEnd = currentNote.endTime;
-            // 裁剪到下一個音符開始前（留 10ms 間隙避免重疊）
-            currentNote.endTime = nextNonChordNote.startTime - 0.01;
-            currentNote.duration = currentNote.endTime - currentNote.startTime;
-
-            if (currentNote.startTime >= 32 && currentNote.startTime <= 34) {
-                console.log(`  ✂️ 裁剪 legato: MIDI${currentNote.note}, ${originalEnd.toFixed(3)}s → ${currentNote.endTime.toFixed(3)}s`);
+        if (shouldKeep) {
+            // 找到下一個不是和弦的音符（開始時間明顯不同）
+            let nextNonChordNote = null;
+            for (let j = i + 1; j < sorted.length; j++) {
+                const timeDiff = Math.abs(sorted[j].startTime - currentNote.startTime);
+                if (timeDiff >= startTimeThreshold) {
+                    // 這是下一個不同時開始的音符（不是和弦的一部分）
+                    nextNonChordNote = sorted[j];
+                    break;
+                }
             }
-        }
 
-        // 確保持續時間合理
-        if (currentNote.duration > 0.01) {
-            result.push(currentNote);
+            // 如果當前音符的結束時間超過下一個非和弦音符的開始時間（legato）
+            if (nextNonChordNote && currentNote.endTime > nextNonChordNote.startTime) {
+                const originalEnd = currentNote.endTime;
+                // 裁剪到下一個音符開始前（留 10ms 間隙避免重疊）
+                currentNote.endTime = nextNonChordNote.startTime - 0.01;
+                currentNote.duration = currentNote.endTime - currentNote.startTime;
+            }
+
+            // 確保持續時間合理
+            if (currentNote.duration > 0.01) {
+                result.push(currentNote);
+            }
         }
     }
 
-    console.log(`音符處理: 原始 ${notes.length} 個，保留 ${result.length} 個（保留所有和弦，裁剪 legato 重疊）`);
+    console.log(`音符處理: 原始 ${notes.length} 個，過濾後 ${result.length} 個（只保留主旋律最高音）`);
     return result;
 }
 
