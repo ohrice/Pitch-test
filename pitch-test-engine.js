@@ -1,4 +1,5 @@
 let melodyTemplate = [];
+let originalMidiNotes = []; // 儲存原始 MIDI 音符（用於正確計數）
 let userPitchData = [];
 let accompBuffer;
 let audioCtx;
@@ -529,6 +530,9 @@ async function analyzeMelody(midiFile) {
         const midiNotes = parseMIDI(arrayBuffer);
         updateProgress('melodyProgressFill', 'melodyProgressText', 80);
 
+        // 儲存原始 MIDI 音符（用於正確計數）
+        originalMidiNotes = midiNotes;
+
         console.log(`MIDI 解析完成，找到 ${midiNotes.length} 個音符`);
         console.log('前 10 個音符:', midiNotes.slice(0, 10));
 
@@ -795,41 +799,54 @@ function calculateFinalResults() {
     // 計算整體平均準確率（使用所有採樣點）
     const avgAccuracy = accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length;
 
-    // 將採樣點轉換為音符區塊（這才是真正的音符數量）
-    const noteBlocks = groupNotesIntoBlocks(melodyTemplate, 0.15);
-    console.log(`🎵 音符區塊分析: 從 ${melodyTemplate.length} 個採樣點轉換為 ${noteBlocks.length} 個音符區塊`);
+    // 使用原始 MIDI 音符進行評分（正確的音符數量）
+    if (originalMidiNotes.length === 0) {
+        console.warn('⚠️ 沒有原始 MIDI 音符資料，無法正確計算音符數量');
+        return {
+            avgAccuracy: avgAccuracy.toFixed(1),
+            finalScore: Math.round(avgAccuracy),
+            perfectNotes: 0,
+            goodNotes: 0,
+            poorNotes: 0,
+            totalNotes: 0,
+            scoredNotes: 0
+        };
+    }
+
+    console.log(`🎵 使用原始 MIDI 音符計算: 共 ${originalMidiNotes.length} 個音符`);
 
     let perfectNotes = 0;
     let goodNotes = 0;
     let poorNotes = 0;
     let scoredNotes = 0;
 
-    // 為每個音符區塊計算平均分數
-    noteBlocks.forEach((block, blockIndex) => {
-        // 收集該區塊內所有採樣點的分數
-        const blockScores = [];
+    // 為每個原始 MIDI 音符計算平均分數
+    originalMidiNotes.forEach((midiNote, midiIndex) => {
+        // 收集該 MIDI 音符時間範圍內的所有採樣點分數
+        const noteScoresList = [];
 
-        // 找出屬於這個區塊的所有採樣點
+        // 找出屬於這個 MIDI 音符的所有採樣點
         melodyTemplate.forEach((point, pointIndex) => {
-            // 檢查採樣點是否在這個區塊的時間範圍內且音高匹配
-            if (point.time >= block.startTime && point.time <= block.endTime) {
-                if (Math.round(point.note) === block.roundedNote) {
-                    // 如果這個採樣點有分數，加入 blockScores
+            // 檢查採樣點是否在這個 MIDI 音符的時間範圍內且音高匹配
+            if (point.time >= midiNote.startTime && point.time <= midiNote.endTime) {
+                // 音高容差：±1 半音（因為可能有四捨五入）
+                if (Math.abs(point.note - midiNote.note) < 1.0) {
+                    // 如果這個採樣點有分數，加入 noteScoresList
                     if (noteScores[pointIndex] && noteScores[pointIndex].length > 0) {
-                        blockScores.push(...noteScores[pointIndex]);
+                        noteScoresList.push(...noteScores[pointIndex]);
                     }
                 }
             }
         });
 
-        // 如果該區塊有任何分數，計算平均值
-        if (blockScores.length > 0) {
-            const blockAvg = blockScores.reduce((a, b) => a + b, 0) / blockScores.length;
+        // 如果該 MIDI 音符有任何分數，計算平均值
+        if (noteScoresList.length > 0) {
+            const noteAvg = noteScoresList.reduce((a, b) => a + b, 0) / noteScoresList.length;
             scoredNotes++;
 
-            if (blockAvg >= 90) {
+            if (noteAvg >= 90) {
                 perfectNotes++;
-            } else if (blockAvg >= 50) {
+            } else if (noteAvg >= 50) {
                 goodNotes++;
             } else {
                 poorNotes++;
@@ -840,7 +857,7 @@ function calculateFinalResults() {
         }
     });
 
-    console.log(`📊 評分統計: 總音符=${noteBlocks.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
+    console.log(`📊 評分統計: 總音符=${originalMidiNotes.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
 
     return {
         avgAccuracy: avgAccuracy.toFixed(1),
@@ -848,7 +865,7 @@ function calculateFinalResults() {
         perfectNotes,
         goodNotes,
         poorNotes,
-        totalNotes: noteBlocks.length,
+        totalNotes: originalMidiNotes.length,
         scoredNotes // 實際評分的音符數
     };
 }
