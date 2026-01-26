@@ -632,6 +632,12 @@ function renderPitchAxis() {
     const axisCanvas = document.getElementById('pitchAxis');
     if (!axisCanvas) return;
 
+    // 設定 canvas 實際繪圖尺寸（與 CSS 樣式一致）
+    if (axisCanvas.height !== 400) {
+        axisCanvas.width = 60;
+        axisCanvas.height = 400;
+    }
+
     const axisCtx = axisCanvas.getContext('2d');
     const pitchHeight = 10;
     const offsetNote = 43;  // 從 G2 (43) 開始，讓最高音到達 B5 (83)
@@ -690,6 +696,16 @@ function renderPianoRoll(currentTime = -1) {
     if (!canvas) {
         console.error('Canvas 元素不存在！');
         return;
+    }
+
+    // 設定 canvas 實際繪圖尺寸（根據容器大小）
+    const container = canvas.parentElement;
+    const desiredWidth = container.clientWidth - 60; // 減去 Y 軸寬度
+    const desiredHeight = 400;
+
+    if (canvas.width !== desiredWidth || canvas.height !== desiredHeight) {
+        canvas.width = desiredWidth;
+        canvas.height = desiredHeight;
     }
 
     const ctx = canvas.getContext('2d');
