@@ -42,7 +42,7 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     rms = Math.sqrt(rms / SIZE);
 
     // 根據用途設定不同的音量閾值（降低閾值以提高靈敏度）
-    const rmsThreshold = isLiveInput ? 0.01 : 0.005; // 降低閾值,讓耳麥也能順利收音
+    const rmsThreshold = isLiveInput ? 0.005 : 0.003; // 進一步降低閾值，提高收音靈敏度
     if (rms < rmsThreshold) return { pitch: -1, clarity: 0, rms: rms };
 
     // 尋找最佳相關性
@@ -795,23 +795,41 @@ function calculateFinalResults() {
     // 計算整體平均準確率（使用所有採樣點）
     const avgAccuracy = accuracyScores.reduce((a, b) => a + b, 0) / accuracyScores.length;
 
-    // 基於音符的評分
+    // 將採樣點轉換為音符區塊（這才是真正的音符數量）
+    const noteBlocks = groupNotesIntoBlocks(melodyTemplate, 0.15);
+    console.log(`🎵 音符區塊分析: 從 ${melodyTemplate.length} 個採樣點轉換為 ${noteBlocks.length} 個音符區塊`);
+
     let perfectNotes = 0;
     let goodNotes = 0;
     let poorNotes = 0;
     let scoredNotes = 0;
 
-    // 為每個 MIDI 音符計算平均分數
-    for (let i = 0; i < melodyTemplate.length; i++) {
-        if (noteScores[i] && noteScores[i].length > 0) {
-            // 計算該音符所有採樣點的平均分數
-            const noteAvg = noteScores[i].reduce((a, b) => a + b, 0) / noteScores[i].length;
+    // 為每個音符區塊計算平均分數
+    noteBlocks.forEach((block, blockIndex) => {
+        // 收集該區塊內所有採樣點的分數
+        const blockScores = [];
+
+        // 找出屬於這個區塊的所有採樣點
+        melodyTemplate.forEach((point, pointIndex) => {
+            // 檢查採樣點是否在這個區塊的時間範圍內且音高匹配
+            if (point.time >= block.startTime && point.time <= block.endTime) {
+                if (Math.round(point.note) === block.roundedNote) {
+                    // 如果這個採樣點有分數，加入 blockScores
+                    if (noteScores[pointIndex] && noteScores[pointIndex].length > 0) {
+                        blockScores.push(...noteScores[pointIndex]);
+                    }
+                }
+            }
+        });
+
+        // 如果該區塊有任何分數，計算平均值
+        if (blockScores.length > 0) {
+            const blockAvg = blockScores.reduce((a, b) => a + b, 0) / blockScores.length;
             scoredNotes++;
 
-            // 根據平均分數分類
-            if (noteAvg >= 90) {
+            if (blockAvg >= 90) {
                 perfectNotes++;
-            } else if (noteAvg >= 50) {
+            } else if (blockAvg >= 50) {
                 goodNotes++;
             } else {
                 poorNotes++;
@@ -820,9 +838,9 @@ function calculateFinalResults() {
             // 沒有評分的音符視為 poor（用戶沒唱到或沒被偵測到）
             poorNotes++;
         }
-    }
+    });
 
-    console.log(`📊 評分統計: 總音符=${melodyTemplate.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
+    console.log(`📊 評分統計: 總音符=${noteBlocks.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
 
     return {
         avgAccuracy: avgAccuracy.toFixed(1),
@@ -830,7 +848,7 @@ function calculateFinalResults() {
         perfectNotes,
         goodNotes,
         poorNotes,
-        totalNotes: melodyTemplate.length,
+        totalNotes: noteBlocks.length,
         scoredNotes // 實際評分的音符數
     };
 }
@@ -1460,8 +1478,12 @@ function update() {
     // 使用平滑處理減少抖動
     const pitch = smoothPitch(rawPitch);
 
-    // 降低過濾條件以提高靈敏度（clarity 從 0.85 降低為 0.7）
-    if (pitch > 0 && pitch >= 80 && pitch <= 1000 && clarity > 0.7) {
+    // 動態 clarity 門檻：音量越大，越寬鬆（應對背景噪音）
+    // 基礎門檻 0.6，如果音量大於 5% 則進一步降低至 0.55
+    const baseClarityThreshold = 0.6;
+    const clarityThreshold = rms > 0.05 ? 0.55 : baseClarityThreshold;
+
+    if (pitch > 0 && pitch >= 80 && pitch <= 1000 && clarity > clarityThreshold) {
         const midiNote = 69 + 12 * Math.log2(pitch / 440);
 
         // 找到目標音符
@@ -1498,10 +1520,11 @@ function update() {
     } else {
         // 診斷：偵測失敗時，每秒輸出一次訊息（避免洪水）
         if (Math.random() < 0.017) { // 約每秒一次 (1/60)
+            const requiredClarity = rms > 0.05 ? 0.55 : 0.6;
             if (pitch === 0 || pitch < 80 || pitch > 1000) {
                 console.log(`⚠️ 音高超出範圍: ${pitch.toFixed(1)} Hz (需要 80-1000 Hz)`);
-            } else if (clarity <= 0.7) {
-                console.log(`⚠️ 音高不夠清晰: clarity=${clarity.toFixed(2)} (需要 > 0.7), pitch=${pitch.toFixed(1)} Hz, 音量=${(rms*100).toFixed(1)}%`);
+            } else if (clarity <= requiredClarity) {
+                console.log(`⚠️ 音高不夠清晰: clarity=${clarity.toFixed(2)} (需要 > ${requiredClarity.toFixed(2)}), pitch=${pitch.toFixed(1)} Hz, 音量=${(rms*100).toFixed(1)}%`);
             }
         }
     }
