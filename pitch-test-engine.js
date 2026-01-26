@@ -1322,9 +1322,9 @@ if (startBtn) {
 
         const micSource = audioCtx.createMediaStreamSource(micStream);
 
-        // 加入麥克風增益節點，極大幅度放大以改善收音效果
+        // 加入麥克風增益節點，適度放大避免破音
         const micGain = audioCtx.createGain();
-        micGain.gain.value = 8.0; // 放大 8 倍（應對斷斷續續問題）
+        micGain.gain.value = 3.0; // 放大 3 倍（平衡音量與音質）
 
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
@@ -1334,7 +1334,7 @@ if (startBtn) {
         micSource.connect(micGain);
         micGain.connect(analyser);
 
-        console.log('✅ 麥克風增益已設定為 8x');
+        console.log('✅ 麥克風增益已設定為 3x（避免破音）');
     } catch (err) {
         console.error('麥克風錯誤:', err);
         alert(`無法開啟麥克風: ${err.message}\n請檢查權限設定`);
@@ -1365,9 +1365,9 @@ if (startBtn) {
             const accompDelay = audioCtx.createDelay(1.0);
             accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 120ms
 
-            // 建立麥克風增益節點（極大幅度放大人聲）
+            // 建立麥克風增益節點（適度放大避免破音）
             const micGain = audioCtx.createGain();
-            micGain.gain.value = 10.0; // 麥克風放大 10 倍（應對斷斷續續問題）
+            micGain.gain.value = 4.0; // 麥克風放大 4 倍（平衡音量與音質）
 
             // 伴奏 → 增益 → 延遲 → 混音輸出
             sourceNode.connect(accompGain);
@@ -1381,7 +1381,7 @@ if (startBtn) {
 
             mixedStream = destination.stream;
 
-            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 1000%`);
+            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 400%（避免破音）`);
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
