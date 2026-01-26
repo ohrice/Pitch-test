@@ -634,7 +634,7 @@ function renderPitchAxis() {
 
     const axisCtx = axisCanvas.getContext('2d');
     const pitchHeight = 10;
-    const offsetNote = 50;
+    const offsetNote = 43;  // 從 G2 (43) 開始，讓最高音到達 B5 (83)
 
     axisCtx.clearRect(0, 0, axisCanvas.width, axisCanvas.height);
 
@@ -676,8 +676,8 @@ function renderPitchAxis() {
             axisCtx.lineTo(axisCanvas.width, y);
             axisCtx.stroke();
 
-            // 只為 C 和 E, G 音符標示名稱
-            if (midiNote % 12 === 0 || midiNote % 12 === 4 || midiNote % 12 === 7) {
+            // 標示 C、E、G、B 音符名稱（增加 B 以便看到 B5）
+            if (midiNote % 12 === 0 || midiNote % 12 === 4 || midiNote % 12 === 7 || midiNote % 12 === 11) {
                 axisCtx.fillText(fullNoteName, axisCanvas.width - 12, y + 3);
             }
         }
@@ -695,7 +695,7 @@ function renderPianoRoll(currentTime = -1) {
     const ctx = canvas.getContext('2d');
     const timeScale = 50; // 增加時間縮放，讓畫面更清楚
     const pitchHeight = 10;
-    const offsetNote = 50;
+    const offsetNote = 43;  // 從 G2 開始，與音高軸一致
 
     // 每次渲染時也更新音高軸
     renderPitchAxis();
