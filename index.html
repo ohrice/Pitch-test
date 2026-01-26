@@ -695,22 +695,6 @@
                 </div>
             </div>
 
-            <!-- 即時診斷資訊 -->
-            <div class="accuracy-meter" style="margin-top: 10px;">
-                <div class="meter-label">收音診斷</div>
-                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px;">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-                        <div>音高: <span id="diagPitch" style="color: #00d1b2; font-weight: bold;">-</span></div>
-                        <div>清晰度: <span id="diagClarity" style="color: #00d1b2; font-weight: bold;">-</span></div>
-                        <div>音量: <span id="diagVolume" style="color: #00d1b2; font-weight: bold;">-</span></div>
-                        <div>狀態: <span id="diagStatus" style="color: #48c774; font-weight: bold;">待機</span></div>
-                    </div>
-                    <div id="diagReason" style="margin-top: 8px; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; color: #ffdd57; font-size: 12px; min-height: 20px;">
-                        等待開始測試...
-                    </div>
-                </div>
-            </div>
-
             <div class="visualizer-container" style="display: flex; gap: 0;">
                 <canvas id="pitchAxis" style="width: 60px; height: 400px; flex-shrink: 0;"></canvas>
                 <canvas id="pianoRoll" style="flex-grow: 1;"></canvas>
@@ -740,15 +724,15 @@
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="perfectNotes">-</div>
-                        <div class="stat-label">完美音符數</div>
+                        <div class="stat-label">完美音符 (≥90分)</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="goodNotes">-</div>
-                        <div class="stat-label">良好音符數</div>
+                        <div class="stat-label">良好音符 (60-89分)</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-value" id="poorNotes">-</div>
-                        <div class="stat-label">需改進音符數</div>
+                        <div class="stat-label">需改進 (<60分)</div>
                     </div>
                 </div>
             </div>

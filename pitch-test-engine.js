@@ -851,14 +851,14 @@ function calculateFinalResults() {
 
             if (noteAvg >= 90) {
                 perfectNotes++;
-            } else if (noteAvg >= 50) {
+            } else if (noteAvg >= 60) {
                 goodNotes++;
             } else {
                 poorNotes++;
             }
         } else {
-            // 沒有評分的音符視為 poor（用戶沒唱到或沒被偵測到）
-            poorNotes++;
+            // 沒有偵測到的音符不計入評分（避免不公平扣分）
+            // poorNotes++;
         }
     });
 
@@ -922,6 +922,15 @@ function displayResults() {
     document.getElementById('perfectNotes').textContent = results.perfectNotes;
     document.getElementById('goodNotes').textContent = results.goodNotes;
     document.getElementById('poorNotes').textContent = results.poorNotes;
+
+    // 顯示已評分音符數量提示
+    const scoredRatio = results.scoredNotes / results.totalNotes;
+    if (scoredRatio < 0.8) {
+        console.log(`⚠️ 偵測率較低: 已評分 ${results.scoredNotes}/${results.totalNotes} 個音符 (${(scoredRatio * 100).toFixed(0)}%)`);
+        console.log('💡 建議: 請確保麥克風靠近嘴巴,音量足夠,並跟著橘色方塊一起唱');
+    } else {
+        console.log(`✅ 偵測率良好: 已評分 ${results.scoredNotes}/${results.totalNotes} 個音符 (${(scoredRatio * 100).toFixed(0)}%)`);
+    }
 
     document.getElementById('resultsPanel').style.display = 'block';
 
@@ -1514,54 +1523,6 @@ function updateVolumeMeter(rms) {
     }
 }
 
-// 更新診斷資訊（即時顯示偵測狀態）
-function updateDiagnostics(pitch, clarity, rms, requiredClarity, minPitch, maxPitch) {
-    const diagPitch = document.getElementById('diagPitch');
-    const diagClarity = document.getElementById('diagClarity');
-    const diagVolume = document.getElementById('diagVolume');
-    const diagStatus = document.getElementById('diagStatus');
-    const diagReason = document.getElementById('diagReason');
-
-    if (!diagPitch || !diagClarity || !diagVolume || !diagStatus || !diagReason) return;
-
-    // 更新數值顯示
-    diagPitch.textContent = pitch > 0 ? `${pitch.toFixed(1)} Hz` : '無音高';
-    diagClarity.textContent = clarity.toFixed(2);
-    diagVolume.textContent = `${(rms * 100).toFixed(1)}%`;
-
-    // 判斷偵測狀態
-    let status = '';
-    let reason = '';
-    let statusColor = '';
-
-    if (pitch <= 0 || pitch === -1) {
-        status = '❌ 無音高';
-        reason = '未偵測到有效音高，可能是音量太小或背景噪音太大';
-        statusColor = '#f14668';
-    } else if (pitch < minPitch) {
-        status = '❌ 太低';
-        reason = `音高 ${pitch.toFixed(1)} Hz 低於最低值 ${minPitch} Hz`;
-        statusColor = '#f14668';
-    } else if (pitch > maxPitch) {
-        status = '❌ 太高';
-        reason = `音高 ${pitch.toFixed(1)} Hz 高於最高值 ${maxPitch} Hz`;
-        statusColor = '#f14668';
-    } else if (clarity <= requiredClarity) {
-        status = '⚠️ 不清晰';
-        reason = `清晰度 ${clarity.toFixed(2)} 低於門檻 ${requiredClarity.toFixed(2)}，可能是背景噪音或音質問題`;
-        statusColor = '#ffdd57';
-    } else {
-        status = '✅ 正常偵測';
-        reason = `音高、清晰度和音量都在正常範圍，已記錄`;
-        statusColor = '#48c774';
-    }
-
-    diagStatus.textContent = status;
-    diagStatus.style.color = statusColor;
-    diagReason.textContent = reason;
-    diagReason.style.color = statusColor;
-}
-
 // 5. 每幀更新邏輯 (包含即時音準偵測)
 function update() {
     if (!isPlaying) return;
@@ -1587,9 +1548,6 @@ function update() {
     // 擴大音高範圍以涵蓋更廣的人聲（男低音約 80-350 Hz，女高音約 250-1100 Hz）
     const minPitch = 60;   // 從 80 降至 60 Hz（涵蓋更低音域）
     const maxPitch = 1200; // 從 1000 提高至 1200 Hz（涵蓋更高音域）
-
-    // 更新診斷資訊（即時顯示）
-    updateDiagnostics(pitch, clarity, rms, clarityThreshold, minPitch, maxPitch);
 
     if (pitch > 0 && pitch >= minPitch && pitch <= maxPitch && clarity > clarityThreshold) {
         const midiNote = 69 + 12 * Math.log2(pitch / 440);
