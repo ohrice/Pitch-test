@@ -396,11 +396,54 @@ function parseMIDI(arrayBuffer) {
     // 排序音符
     notesInSeconds.sort((a, b) => a.startTime - b.startTime);
 
-    if (notesInSeconds.length > 0) {
-        console.log(`時間範圍: ${notesInSeconds[0].startTime.toFixed(2)} - ${notesInSeconds[notesInSeconds.length - 1]?.endTime.toFixed(2)} 秒`);
+    // 過濾重疊的音符，只保留最高音（主旋律）
+    const filteredNotes = filterOverlappingNotes(notesInSeconds);
+
+    console.log(`原始音符數: ${notesInSeconds.length}, 過濾後: ${filteredNotes.length}`);
+
+    if (filteredNotes.length > 0) {
+        console.log(`時間範圍: ${filteredNotes[0].startTime.toFixed(2)} - ${filteredNotes[filteredNotes.length - 1]?.endTime.toFixed(2)} 秒`);
     }
 
-    return notesInSeconds;
+    return filteredNotes;
+}
+
+// 過濾重疊的音符，只保留最高音（主旋律）
+function filterOverlappingNotes(notes) {
+    if (notes.length === 0) return notes;
+
+    const result = [];
+    const timeThreshold = 0.05; // 50 毫秒內視為同時發聲
+
+    for (let i = 0; i < notes.length; i++) {
+        const currentNote = notes[i];
+        let shouldKeep = true;
+
+        // 檢查是否有其他音符在相近時間且音高更高
+        for (let j = 0; j < notes.length; j++) {
+            if (i === j) continue;
+
+            const otherNote = notes[j];
+
+            // 檢查時間是否重疊（起始時間相近）
+            const timeOverlap = Math.abs(currentNote.startTime - otherNote.startTime) < timeThreshold;
+
+            if (timeOverlap) {
+                // 如果有更高的音符，則捨棄當前音符
+                if (otherNote.note > currentNote.note) {
+                    shouldKeep = false;
+                    break;
+                }
+            }
+        }
+
+        if (shouldKeep) {
+            result.push(currentNote);
+        }
+    }
+
+    console.log(`過濾重疊音符: 移除了 ${notes.length - result.length} 個重疊的低音`);
+    return result;
 }
 
 // 讀取可變長度值 (MIDI 格式)
