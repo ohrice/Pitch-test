@@ -408,53 +408,41 @@ function parseMIDI(arrayBuffer) {
     return filteredNotes;
 }
 
-// 過濾重疊的音符，只保留主旋律
+// 過濾重疊的音符，只保留主旋律（只過濾同時開始的和弦）
 function filterOverlappingNotes(notes) {
     if (notes.length === 0) return notes;
 
     const result = [];
+    const startTimeThreshold = 0.1; // 100 毫秒內視為同時開始（和弦）
 
     for (let i = 0; i < notes.length; i++) {
-        const currentNote = { ...notes[i] }; // 複製音符以便修改
+        const currentNote = notes[i];
         let shouldKeep = true;
 
-        // 檢查與其他音符的時間重疊
+        // 只檢查是否有「同時開始」的其他音符
         for (let j = 0; j < notes.length; j++) {
             if (i === j) continue;
 
             const otherNote = notes[j];
 
-            // 檢查兩個音符是否在時間上重疊
-            const hasTimeOverlap = (
-                (currentNote.startTime >= otherNote.startTime && currentNote.startTime < otherNote.endTime) ||
-                (otherNote.startTime >= currentNote.startTime && otherNote.startTime < currentNote.endTime)
-            );
+            // 檢查是否同時開始（開始時間非常接近）
+            const startAtSameTime = Math.abs(currentNote.startTime - otherNote.startTime) < startTimeThreshold;
 
-            if (hasTimeOverlap) {
-                // 如果有重疊且對方音符更高，則捨棄當前音符
+            if (startAtSameTime) {
+                // 如果同時開始且對方音符更高，則捨棄當前音符（保留和弦中的最高音）
                 if (otherNote.note > currentNote.note) {
                     shouldKeep = false;
                     break;
                 }
-
-                // 如果當前音符更高，但與後續低音重疊，縮短當前音符
-                if (currentNote.note > otherNote.note &&
-                    otherNote.startTime > currentNote.startTime &&
-                    currentNote.endTime > otherNote.startTime) {
-                    // 縮短到下一個音符開始前
-                    currentNote.endTime = otherNote.startTime;
-                    currentNote.duration = currentNote.endTime - currentNote.startTime;
-                }
             }
         }
 
-        // 只保留持續時間合理的音符（至少 10 毫秒）
-        if (shouldKeep && currentNote.duration > 0.01) {
+        if (shouldKeep) {
             result.push(currentNote);
         }
     }
 
-    console.log(`過濾重疊音符: 原始 ${notes.length} 個，保留 ${result.length} 個主旋律音符`);
+    console.log(`過濾和弦音符: 原始 ${notes.length} 個，保留 ${result.length} 個音符（移除了 ${notes.length - result.length} 個和弦低音）`);
     return result;
 }
 
