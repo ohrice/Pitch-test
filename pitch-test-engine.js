@@ -1460,8 +1460,8 @@ function update() {
     // 使用平滑處理減少抖動
     const pitch = smoothPitch(rawPitch);
 
-    // 降低過濾條件以提高靈敏度
-    if (pitch > 0 && pitch >= 80 && pitch <= 1000 && clarity > 0.85) {
+    // 降低過濾條件以提高靈敏度（clarity 從 0.85 降低為 0.7）
+    if (pitch > 0 && pitch >= 80 && pitch <= 1000 && clarity > 0.7) {
         const midiNote = 69 + 12 * Math.log2(pitch / 440);
 
         // 找到目標音符
@@ -1494,6 +1494,15 @@ function update() {
         } else {
             // 沒有目標音符時，只更新指示器，不記錄數據
             updateAccuracyMeter(0, midiNote, null);
+        }
+    } else {
+        // 診斷：偵測失敗時，每秒輸出一次訊息（避免洪水）
+        if (Math.random() < 0.017) { // 約每秒一次 (1/60)
+            if (pitch === 0 || pitch < 80 || pitch > 1000) {
+                console.log(`⚠️ 音高超出範圍: ${pitch.toFixed(1)} Hz (需要 80-1000 Hz)`);
+            } else if (clarity <= 0.7) {
+                console.log(`⚠️ 音高不夠清晰: clarity=${clarity.toFixed(2)} (需要 > 0.7), pitch=${pitch.toFixed(1)} Hz, 音量=${(rms*100).toFixed(1)}%`);
+            }
         }
     }
 
