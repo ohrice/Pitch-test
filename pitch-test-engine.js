@@ -408,41 +408,53 @@ function parseMIDI(arrayBuffer) {
     return filteredNotes;
 }
 
-// 過濾重疊的音符，只保留最高音（主旋律）
+// 過濾重疊的音符，只保留主旋律
 function filterOverlappingNotes(notes) {
     if (notes.length === 0) return notes;
 
     const result = [];
-    const timeThreshold = 0.05; // 50 毫秒內視為同時發聲
 
     for (let i = 0; i < notes.length; i++) {
-        const currentNote = notes[i];
+        const currentNote = { ...notes[i] }; // 複製音符以便修改
         let shouldKeep = true;
 
-        // 檢查是否有其他音符在相近時間且音高更高
+        // 檢查與其他音符的時間重疊
         for (let j = 0; j < notes.length; j++) {
             if (i === j) continue;
 
             const otherNote = notes[j];
 
-            // 檢查時間是否重疊（起始時間相近）
-            const timeOverlap = Math.abs(currentNote.startTime - otherNote.startTime) < timeThreshold;
+            // 檢查兩個音符是否在時間上重疊
+            const hasTimeOverlap = (
+                (currentNote.startTime >= otherNote.startTime && currentNote.startTime < otherNote.endTime) ||
+                (otherNote.startTime >= currentNote.startTime && otherNote.startTime < currentNote.endTime)
+            );
 
-            if (timeOverlap) {
-                // 如果有更高的音符，則捨棄當前音符
+            if (hasTimeOverlap) {
+                // 如果有重疊且對方音符更高，則捨棄當前音符
                 if (otherNote.note > currentNote.note) {
                     shouldKeep = false;
                     break;
                 }
+
+                // 如果當前音符更高，但與後續低音重疊，縮短當前音符
+                if (currentNote.note > otherNote.note &&
+                    otherNote.startTime > currentNote.startTime &&
+                    currentNote.endTime > otherNote.startTime) {
+                    // 縮短到下一個音符開始前
+                    currentNote.endTime = otherNote.startTime;
+                    currentNote.duration = currentNote.endTime - currentNote.startTime;
+                }
             }
         }
 
-        if (shouldKeep) {
+        // 只保留持續時間合理的音符（至少 10 毫秒）
+        if (shouldKeep && currentNote.duration > 0.01) {
             result.push(currentNote);
         }
     }
 
-    console.log(`過濾重疊音符: 移除了 ${notes.length - result.length} 個重疊的低音`);
+    console.log(`過濾重疊音符: 原始 ${notes.length} 個，保留 ${result.length} 個主旋律音符`);
     return result;
 }
 
