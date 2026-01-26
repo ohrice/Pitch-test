@@ -415,10 +415,10 @@ function filterOverlappingNotes(notes) {
     const result = [];
     const startTimeThreshold = 0.05; // 50 毫秒內視為同時開始（和弦），降低閾值更精確
 
-    // 診斷：顯示 33-34 秒區間的音符
-    const debugNotes = notes.filter(n => n.startTime >= 33 && n.startTime <= 34);
+    // 診斷：顯示 35-37 秒區間的音符（擴大範圍）
+    const debugNotes = notes.filter(n => n.startTime >= 35 && n.startTime <= 37);
     if (debugNotes.length > 0) {
-        console.log('=== 33-34秒區間的音符詳情 ===');
+        console.log('=== 35-37秒區間的音符詳情 ===');
         debugNotes.forEach((n, idx) => {
             const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][n.note % 12];
             const octave = Math.floor(n.note / 12) - 1;
@@ -446,7 +446,7 @@ function filterOverlappingNotes(notes) {
                     shouldKeep = false;
 
                     // 診斷：記錄被過濾的音符
-                    if (currentNote.startTime >= 33 && currentNote.startTime <= 34) {
+                    if (currentNote.startTime >= 35 && currentNote.startTime <= 37) {
                         console.log(`  ❌ 過濾: MIDI${currentNote.note}（因為有更高的 MIDI${otherNote.note}，開始時間差僅 ${(timeDiff * 1000).toFixed(1)}ms）`);
                     }
                     break;
