@@ -1318,10 +1318,20 @@ if (startBtn) {
         }
 
         const micSource = audioCtx.createMediaStreamSource(micStream);
+
+        // 加入麥克風增益節點，放大 4 倍以改善收音效果
+        const micGain = audioCtx.createGain();
+        micGain.gain.value = 4.0; // 放大 4 倍
+
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
         analyser.smoothingTimeConstant = 0.8;
-        micSource.connect(analyser);
+
+        // 麥克風 → 增益 → 分析器
+        micSource.connect(micGain);
+        micGain.connect(analyser);
+
+        console.log('✅ 麥克風增益已設定為 4x');
     } catch (err) {
         console.error('麥克風錯誤:', err);
         alert(`無法開啟麥克風: ${err.message}\n請檢查權限設定`);
@@ -1343,11 +1353,27 @@ if (startBtn) {
     if (wantToRecord) {
         try {
             const destination = audioCtx.createMediaStreamDestination();
-            sourceNode.connect(destination);
 
+            // 建立伴奏增益節點（降低伴奏音量，避免蓋過人聲）
+            const accompGain = audioCtx.createGain();
+            accompGain.gain.value = 0.4; // 伴奏降至 40%
+
+            // 建立麥克風增益節點（大幅放大人聲）
+            const micGain = audioCtx.createGain();
+            micGain.gain.value = 5.0; // 麥克風放大 5 倍
+
+            // 伴奏 → 增益 → 混音輸出
+            sourceNode.connect(accompGain);
+            accompGain.connect(destination);
+
+            // 麥克風 → 增益 → 混音輸出
             const micSource = audioCtx.createMediaStreamSource(micStream);
-            micSource.connect(destination);
+            micSource.connect(micGain);
+            micGain.connect(destination);
+
             mixedStream = destination.stream;
+
+            console.log('✅ 錄音混音設定：伴奏 40%, 麥克風 500%');
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
