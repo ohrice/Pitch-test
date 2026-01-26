@@ -12,8 +12,8 @@ let accuracyScores = [];
 let testStartTimestamp = null; // 記錄測試開始時間（用於計算測試時長）
 let noteScores = {}; // 記錄每個音符的所有採樣分數 { noteIndex: [score1, score2, ...] }
 
-// 音訊延遲補償（秒）- 麥克風處理延遲約 100-150ms
-const AUDIO_LATENCY_COMPENSATION = 0.12; // 120ms 補償
+// 音訊延遲補償（秒）- 麥克風處理延遲約 150-250ms
+const AUDIO_LATENCY_COMPENSATION = 0.22; // 220ms 補償（加大以改善視覺化延遲）
 
 // 錄音相關變數
 let mediaRecorder = null;
@@ -73,8 +73,8 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     }
 
     // 根據用途設定不同的相關性閾值（降低閾值以提高靈敏度）
-    // 大幅降低以應對用戶「有唱但沒偵測到」的問題
-    const clarityThreshold = isLiveInput ? 0.6 : 0.5; // 進一步降低
+    // 極度降低以解決「人聲斷斷續續」問題
+    const clarityThreshold = isLiveInput ? 0.5 : 0.4; // 極低門檻
     if (best_correlation > clarityThreshold && best_offset > 0) {
         const frequency = sampleRate / best_offset;
         return { pitch: frequency, clarity: best_correlation, rms: rms };
@@ -1322,9 +1322,9 @@ if (startBtn) {
 
         const micSource = audioCtx.createMediaStreamSource(micStream);
 
-        // 加入麥克風增益節點，放大 4 倍以改善收音效果
+        // 加入麥克風增益節點，極大幅度放大以改善收音效果
         const micGain = audioCtx.createGain();
-        micGain.gain.value = 4.0; // 放大 4 倍
+        micGain.gain.value = 8.0; // 放大 8 倍（應對斷斷續續問題）
 
         analyser = audioCtx.createAnalyser();
         analyser.fftSize = 2048;
@@ -1334,7 +1334,7 @@ if (startBtn) {
         micSource.connect(micGain);
         micGain.connect(analyser);
 
-        console.log('✅ 麥克風增益已設定為 4x');
+        console.log('✅ 麥克風增益已設定為 8x');
     } catch (err) {
         console.error('麥克風錯誤:', err);
         alert(`無法開啟麥克風: ${err.message}\n請檢查權限設定`);
@@ -1365,9 +1365,9 @@ if (startBtn) {
             const accompDelay = audioCtx.createDelay(1.0);
             accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 120ms
 
-            // 建立麥克風增益節點（大幅放大人聲）
+            // 建立麥克風增益節點（極大幅度放大人聲）
             const micGain = audioCtx.createGain();
-            micGain.gain.value = 5.0; // 麥克風放大 5 倍
+            micGain.gain.value = 10.0; // 麥克風放大 10 倍（應對斷斷續續問題）
 
             // 伴奏 → 增益 → 延遲 → 混音輸出
             sourceNode.connect(accompGain);
@@ -1381,7 +1381,7 @@ if (startBtn) {
 
             mixedStream = destination.stream;
 
-            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 500%`);
+            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 1000%`);
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
@@ -1580,9 +1580,9 @@ function update() {
     const pitch = smoothPitch(rawPitch);
 
     // 動態 clarity 門檻：音量越大，越寬鬆（應對背景噪音）
-    // 大幅降低門檻以提高收音靈敏度（用戶反映即使有唱也沒偵測到）
-    const baseClarityThreshold = 0.4;  // 再次降低至 0.4
-    const clarityThreshold = rms > 0.05 ? 0.35 : baseClarityThreshold;  // 大音量時降至 0.35
+    // 極度降低門檻以解決斷斷續續問題（用戶反映人聲斷斷續續）
+    const baseClarityThreshold = 0.3;  // 極低門檻 0.3
+    const clarityThreshold = rms > 0.05 ? 0.25 : baseClarityThreshold;  // 大音量時降至 0.25
 
     // 擴大音高範圍以涵蓋更廣的人聲（男低音約 80-350 Hz，女高音約 250-1100 Hz）
     const minPitch = 60;   // 從 80 降至 60 Hz（涵蓋更低音域）
