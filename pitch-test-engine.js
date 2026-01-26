@@ -415,14 +415,30 @@ function filterOverlappingNotes(notes) {
     const result = [];
     const startTimeThreshold = 0.05; // 50 毫秒內視為同時開始（和弦），降低閾值更精確
 
-    // 診斷：顯示 35-37 秒區間的音符（擴大範圍）
-    const debugNotes = notes.filter(n => n.startTime >= 35 && n.startTime <= 37);
+    // 診斷：顯示 32-34 秒區間的音符及重疊情況
+    const debugNotes = notes.filter(n =>
+        (n.startTime >= 32 && n.startTime <= 34) ||
+        (n.endTime >= 32 && n.endTime <= 34)
+    );
     if (debugNotes.length > 0) {
-        console.log('=== 35-37秒區間的音符詳情 ===');
+        console.log('=== 32-34秒區間的音符詳情（包含跨越此區間的音符）===');
         debugNotes.forEach((n, idx) => {
             const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][n.note % 12];
             const octave = Math.floor(n.note / 12) - 1;
             console.log(`  音符${idx + 1}: ${noteName}${octave} (MIDI${n.note}), 開始=${n.startTime.toFixed(3)}s, 結束=${n.endTime.toFixed(3)}s, 長度=${n.duration.toFixed(3)}s`);
+
+            // 檢查視覺重疊
+            const overlapping = debugNotes.filter(other =>
+                other !== n &&
+                ((n.startTime < other.endTime && n.endTime > other.startTime))
+            );
+            if (overlapping.length > 0) {
+                overlapping.forEach(o => {
+                    const oName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][o.note % 12];
+                    const oOctave = Math.floor(o.note / 12) - 1;
+                    console.log(`    ⚠️ 時間重疊: ${oName}${oOctave} (${o.startTime.toFixed(3)}s - ${o.endTime.toFixed(3)}s)`);
+                });
+            }
         });
     }
 
@@ -446,8 +462,10 @@ function filterOverlappingNotes(notes) {
                     shouldKeep = false;
 
                     // 診斷：記錄被過濾的音符
-                    if (currentNote.startTime >= 35 && currentNote.startTime <= 37) {
-                        console.log(`  ❌ 過濾: MIDI${currentNote.note}（因為有更高的 MIDI${otherNote.note}，開始時間差僅 ${(timeDiff * 1000).toFixed(1)}ms）`);
+                    if (currentNote.startTime >= 32 && currentNote.startTime <= 34) {
+                        const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][currentNote.note % 12];
+                        const octave = Math.floor(currentNote.note / 12) - 1;
+                        console.log(`  ❌ 過濾: ${noteName}${octave} (MIDI${currentNote.note})（因為有更高的 MIDI${otherNote.note}，開始時間差僅 ${(timeDiff * 1000).toFixed(1)}ms）`);
                     }
                     break;
                 }
