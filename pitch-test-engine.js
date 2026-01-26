@@ -43,7 +43,7 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     rms = Math.sqrt(rms / SIZE);
 
     // 根據用途設定不同的音量閾值（降低閾值以提高靈敏度）
-    const rmsThreshold = isLiveInput ? 0.005 : 0.003; // 進一步降低閾值，提高收音靈敏度
+    const rmsThreshold = isLiveInput ? 0.002 : 0.001; // 再次降低閾值，即使較小音量也能偵測
     if (rms < rmsThreshold) return { pitch: -1, clarity: 0, rms: rms };
 
     // 尋找最佳相關性
@@ -69,7 +69,7 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     }
 
     // 根據用途設定不同的相關性閾值（降低閾值以提高靈敏度）
-    const clarityThreshold = isLiveInput ? 0.85 : 0.75; // 降低閾值,提高檢測成功率
+    const clarityThreshold = isLiveInput ? 0.75 : 0.65; // 再次降低，提高檢測成功率
     if (best_correlation > clarityThreshold && best_offset > 0) {
         const frequency = sampleRate / best_offset;
         return { pitch: frequency, clarity: best_correlation, rms: rms };
@@ -1496,11 +1496,15 @@ function update() {
     const pitch = smoothPitch(rawPitch);
 
     // 動態 clarity 門檻：音量越大，越寬鬆（應對背景噪音）
-    // 基礎門檻 0.6，如果音量大於 5% 則進一步降低至 0.55
-    const baseClarityThreshold = 0.6;
-    const clarityThreshold = rms > 0.05 ? 0.55 : baseClarityThreshold;
+    // 進一步降低門檻以提高收音靈敏度
+    const baseClarityThreshold = 0.5;  // 從 0.6 降至 0.5
+    const clarityThreshold = rms > 0.05 ? 0.45 : baseClarityThreshold;  // 從 0.55 降至 0.45
 
-    if (pitch > 0 && pitch >= 80 && pitch <= 1000 && clarity > clarityThreshold) {
+    // 擴大音高範圍以涵蓋更廣的人聲（男低音約 80-350 Hz，女高音約 250-1100 Hz）
+    const minPitch = 60;   // 從 80 降至 60 Hz（涵蓋更低音域）
+    const maxPitch = 1200; // 從 1000 提高至 1200 Hz（涵蓋更高音域）
+
+    if (pitch > 0 && pitch >= minPitch && pitch <= maxPitch && clarity > clarityThreshold) {
         const midiNote = 69 + 12 * Math.log2(pitch / 440);
 
         // 找到目標音符
@@ -1537,9 +1541,9 @@ function update() {
     } else {
         // 診斷：偵測失敗時，每秒輸出一次訊息（避免洪水）
         if (Math.random() < 0.017) { // 約每秒一次 (1/60)
-            const requiredClarity = rms > 0.05 ? 0.55 : 0.6;
-            if (pitch === 0 || pitch < 80 || pitch > 1000) {
-                console.log(`⚠️ 音高超出範圍: ${pitch.toFixed(1)} Hz (需要 80-1000 Hz)`);
+            const requiredClarity = rms > 0.05 ? 0.45 : 0.5;
+            if (pitch === 0 || pitch < minPitch || pitch > maxPitch) {
+                console.log(`⚠️ 音高超出範圍: ${pitch.toFixed(1)} Hz (需要 ${minPitch}-${maxPitch} Hz)`);
             } else if (clarity <= requiredClarity) {
                 console.log(`⚠️ 音高不夠清晰: clarity=${clarity.toFixed(2)} (需要 > ${requiredClarity.toFixed(2)}), pitch=${pitch.toFixed(1)} Hz, 音量=${(rms*100).toFixed(1)}%`);
             }
