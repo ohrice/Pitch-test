@@ -413,7 +413,18 @@ function filterOverlappingNotes(notes) {
     if (notes.length === 0) return notes;
 
     const result = [];
-    const startTimeThreshold = 0.1; // 100 毫秒內視為同時開始（和弦）
+    const startTimeThreshold = 0.05; // 50 毫秒內視為同時開始（和弦），降低閾值更精確
+
+    // 診斷：顯示 33-34 秒區間的音符
+    const debugNotes = notes.filter(n => n.startTime >= 33 && n.startTime <= 34);
+    if (debugNotes.length > 0) {
+        console.log('=== 33-34秒區間的音符詳情 ===');
+        debugNotes.forEach((n, idx) => {
+            const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][n.note % 12];
+            const octave = Math.floor(n.note / 12) - 1;
+            console.log(`  音符${idx + 1}: ${noteName}${octave} (MIDI${n.note}), 開始=${n.startTime.toFixed(3)}s, 結束=${n.endTime.toFixed(3)}s, 長度=${n.duration.toFixed(3)}s`);
+        });
+    }
 
     for (let i = 0; i < notes.length; i++) {
         const currentNote = notes[i];
@@ -426,12 +437,18 @@ function filterOverlappingNotes(notes) {
             const otherNote = notes[j];
 
             // 檢查是否同時開始（開始時間非常接近）
-            const startAtSameTime = Math.abs(currentNote.startTime - otherNote.startTime) < startTimeThreshold;
+            const timeDiff = Math.abs(currentNote.startTime - otherNote.startTime);
+            const startAtSameTime = timeDiff < startTimeThreshold;
 
             if (startAtSameTime) {
                 // 如果同時開始且對方音符更高，則捨棄當前音符（保留和弦中的最高音）
                 if (otherNote.note > currentNote.note) {
                     shouldKeep = false;
+
+                    // 診斷：記錄被過濾的音符
+                    if (currentNote.startTime >= 33 && currentNote.startTime <= 34) {
+                        console.log(`  ❌ 過濾: MIDI${currentNote.note}（因為有更高的 MIDI${otherNote.note}，開始時間差僅 ${(timeDiff * 1000).toFixed(1)}ms）`);
+                    }
                     break;
                 }
             }
