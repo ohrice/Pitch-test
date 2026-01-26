@@ -43,7 +43,8 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     rms = Math.sqrt(rms / SIZE);
 
     // 根據用途設定不同的音量閾值（降低閾值以提高靈敏度）
-    const rmsThreshold = isLiveInput ? 0.002 : 0.001; // 再次降低閾值，即使較小音量也能偵測
+    // 極低門檻以確保能收到任何聲音
+    const rmsThreshold = isLiveInput ? 0.001 : 0.0005; // 極低閾值
     if (rms < rmsThreshold) return { pitch: -1, clarity: 0, rms: rms };
 
     // 尋找最佳相關性
@@ -69,7 +70,8 @@ function autoCorrelate(buffer, sampleRate, isLiveInput = false) {
     }
 
     // 根據用途設定不同的相關性閾值（降低閾值以提高靈敏度）
-    const clarityThreshold = isLiveInput ? 0.75 : 0.65; // 再次降低，提高檢測成功率
+    // 大幅降低以應對用戶「有唱但沒偵測到」的問題
+    const clarityThreshold = isLiveInput ? 0.6 : 0.5; // 進一步降低
     if (best_correlation > clarityThreshold && best_offset > 0) {
         const frequency = sampleRate / best_offset;
         return { pitch: frequency, clarity: best_correlation, rms: rms };
@@ -1478,6 +1480,54 @@ function updateVolumeMeter(rms) {
     }
 }
 
+// 更新診斷資訊（即時顯示偵測狀態）
+function updateDiagnostics(pitch, clarity, rms, requiredClarity, minPitch, maxPitch) {
+    const diagPitch = document.getElementById('diagPitch');
+    const diagClarity = document.getElementById('diagClarity');
+    const diagVolume = document.getElementById('diagVolume');
+    const diagStatus = document.getElementById('diagStatus');
+    const diagReason = document.getElementById('diagReason');
+
+    if (!diagPitch || !diagClarity || !diagVolume || !diagStatus || !diagReason) return;
+
+    // 更新數值顯示
+    diagPitch.textContent = pitch > 0 ? `${pitch.toFixed(1)} Hz` : '無音高';
+    diagClarity.textContent = clarity.toFixed(2);
+    diagVolume.textContent = `${(rms * 100).toFixed(1)}%`;
+
+    // 判斷偵測狀態
+    let status = '';
+    let reason = '';
+    let statusColor = '';
+
+    if (pitch <= 0 || pitch === -1) {
+        status = '❌ 無音高';
+        reason = '未偵測到有效音高，可能是音量太小或背景噪音太大';
+        statusColor = '#f14668';
+    } else if (pitch < minPitch) {
+        status = '❌ 太低';
+        reason = `音高 ${pitch.toFixed(1)} Hz 低於最低值 ${minPitch} Hz`;
+        statusColor = '#f14668';
+    } else if (pitch > maxPitch) {
+        status = '❌ 太高';
+        reason = `音高 ${pitch.toFixed(1)} Hz 高於最高值 ${maxPitch} Hz`;
+        statusColor = '#f14668';
+    } else if (clarity <= requiredClarity) {
+        status = '⚠️ 不清晰';
+        reason = `清晰度 ${clarity.toFixed(2)} 低於門檻 ${requiredClarity.toFixed(2)}，可能是背景噪音或音質問題`;
+        statusColor = '#ffdd57';
+    } else {
+        status = '✅ 正常偵測';
+        reason = `音高、清晰度和音量都在正常範圍，已記錄`;
+        statusColor = '#48c774';
+    }
+
+    diagStatus.textContent = status;
+    diagStatus.style.color = statusColor;
+    diagReason.textContent = reason;
+    diagReason.style.color = statusColor;
+}
+
 // 5. 每幀更新邏輯 (包含即時音準偵測)
 function update() {
     if (!isPlaying) return;
@@ -1496,13 +1546,16 @@ function update() {
     const pitch = smoothPitch(rawPitch);
 
     // 動態 clarity 門檻：音量越大，越寬鬆（應對背景噪音）
-    // 進一步降低門檻以提高收音靈敏度
-    const baseClarityThreshold = 0.5;  // 從 0.6 降至 0.5
-    const clarityThreshold = rms > 0.05 ? 0.45 : baseClarityThreshold;  // 從 0.55 降至 0.45
+    // 大幅降低門檻以提高收音靈敏度（用戶反映即使有唱也沒偵測到）
+    const baseClarityThreshold = 0.4;  // 再次降低至 0.4
+    const clarityThreshold = rms > 0.05 ? 0.35 : baseClarityThreshold;  // 大音量時降至 0.35
 
     // 擴大音高範圍以涵蓋更廣的人聲（男低音約 80-350 Hz，女高音約 250-1100 Hz）
     const minPitch = 60;   // 從 80 降至 60 Hz（涵蓋更低音域）
     const maxPitch = 1200; // 從 1000 提高至 1200 Hz（涵蓋更高音域）
+
+    // 更新診斷資訊（即時顯示）
+    updateDiagnostics(pitch, clarity, rms, clarityThreshold, minPitch, maxPitch);
 
     if (pitch > 0 && pitch >= minPitch && pitch <= maxPitch && clarity > clarityThreshold) {
         const midiNote = 69 + 12 * Math.log2(pitch / 440);

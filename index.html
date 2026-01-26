@@ -629,8 +629,13 @@
             <span class="search-icon">🔍</span>
         </div>
 
-        <div style="max-width: 1400px; margin: 0 auto 20px; text-align: center;">
-            <button id="addSongBtn" class="admin-only" onclick="window.location.href='upload.html'" style="padding: 15px 30px; border-radius: 30px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 16px; white-space: nowrap; transition: transform 0.1s;">➕ 新增歌曲</button>
+        <div style="max-width: 1400px; margin: 0 auto 20px; text-align: center; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+            <button onclick="openRecordsPage()" style="padding: 15px 30px; border-radius: 30px; border: 2px solid var(--accent); background: transparent; color: var(--accent); font-weight: bold; cursor: pointer; font-size: 16px; white-space: nowrap; transition: all 0.2s;">
+                📊 我的紀錄
+            </button>
+            <button id="addSongBtn" class="admin-only" onclick="window.location.href='upload.html'" style="padding: 15px 30px; border-radius: 30px; border: none; background: var(--accent); color: white; font-weight: bold; cursor: pointer; font-size: 16px; white-space: nowrap; transition: transform 0.1s;">
+                ➕ 新增歌曲
+            </button>
         </div>
 
         <!-- 一部歌曲 -->
@@ -687,6 +692,22 @@
                 <div class="meter-bar">
                     <div class="meter-indicator" id="accuracyMeter"></div>
                     <div class="meter-center-line"></div>
+                </div>
+            </div>
+
+            <!-- 即時診斷資訊 -->
+            <div class="accuracy-meter" style="margin-top: 10px;">
+                <div class="meter-label">收音診斷</div>
+                <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 5px; font-family: monospace; font-size: 13px;">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                        <div>音高: <span id="diagPitch" style="color: #00d1b2; font-weight: bold;">-</span></div>
+                        <div>清晰度: <span id="diagClarity" style="color: #00d1b2; font-weight: bold;">-</span></div>
+                        <div>音量: <span id="diagVolume" style="color: #00d1b2; font-weight: bold;">-</span></div>
+                        <div>狀態: <span id="diagStatus" style="color: #48c774; font-weight: bold;">待機</span></div>
+                    </div>
+                    <div id="diagReason" style="margin-top: 8px; padding: 5px; background: rgba(255,255,255,0.05); border-radius: 3px; color: #ffdd57; font-size: 12px; min-height: 20px;">
+                        等待開始測試...
+                    </div>
                 </div>
             </div>
 
@@ -756,6 +777,72 @@
         </div>
     </div>
 
+    <!-- 練習紀錄頁面 -->
+    <div id="recordsPage" style="display: none; min-height: 100vh; padding: 20px; background: var(--primary-bg);">
+        <div class="header">
+            <h1>📊 我的練習紀錄</h1>
+            <p>查看您的學習進度與成長軌跡</p>
+        </div>
+
+        <!-- 返回按鈕 -->
+        <div style="max-width: 1200px; margin: 20px auto;">
+            <button onclick="closeRecordsPage()" style="padding: 12px 24px; border-radius: 25px; border: 2px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; font-size: 16px; font-weight: bold;">
+                ← 返回歌曲列表
+            </button>
+        </div>
+
+        <!-- 整體統計 -->
+        <div style="max-width: 1200px; margin: 0 auto 30px;">
+            <div style="background: var(--card-bg); padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <h2 style="margin-top: 0; color: var(--accent);">📈 整體統計</h2>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <div style="text-align: center; padding: 15px; background: rgba(0,209,178,0.1); border-radius: 10px;">
+                        <div style="font-size: 2.5em; font-weight: bold; color: var(--accent);" id="totalPractices">0</div>
+                        <div style="color: #aaa; margin-top: 5px;">總練習次數</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: rgba(72,199,116,0.1); border-radius: 10px;">
+                        <div style="font-size: 2.5em; font-weight: bold; color: var(--success);" id="totalSongs">0</div>
+                        <div style="color: #aaa; margin-top: 5px;">已練習歌曲</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: rgba(255,221,87,0.1); border-radius: 10px;">
+                        <div style="font-size: 2.5em; font-weight: bold; color: var(--warning);" id="avgAccuracy">0%</div>
+                        <div style="color: #aaa; margin-top: 5px;">平均準確率</div>
+                    </div>
+                    <div style="text-align: center; padding: 15px; background: rgba(50,152,220,0.1); border-radius: 10px;">
+                        <div style="font-size: 2.5em; font-weight: bold; color: #3298dc;" id="totalTime">0</div>
+                        <div style="color: #aaa; margin-top: 5px;">總練習時間</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 最近練習 -->
+        <div style="max-width: 1200px; margin: 0 auto;">
+            <div style="background: var(--card-bg); padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2 style="margin: 0; color: var(--accent);">🎵 最近練習</h2>
+                    <div>
+                        <button onclick="exportRecords()" style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--accent); background: transparent; color: var(--accent); cursor: pointer; margin-right: 10px; font-size: 14px;">
+                            💾 匯出紀錄
+                        </button>
+                        <button onclick="confirmClearRecords()" style="padding: 8px 16px; border-radius: 20px; border: 1px solid var(--danger); background: transparent; color: var(--danger); cursor: pointer; font-size: 14px;">
+                            🗑️ 清空紀錄
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 紀錄列表 -->
+                <div id="recordsList" style="display: flex; flex-direction: column; gap: 15px;">
+                    <!-- 紀錄項目會由 JavaScript 動態產生 -->
+                    <div style="text-align: center; padding: 40px; color: #aaa;">
+                        尚無練習紀錄<br>
+                        完成第一次測試後，紀錄會自動顯示在這裡
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- LINE 瀏覽器警告模態框 -->
     <div id="lineWarningModal" class="line-warning-modal">
         <div class="line-warning-content">
@@ -780,6 +867,7 @@
 
     <script src="firebase-config.js"></script>
     <script src="firebase-db.js"></script>
+    <script src="practice-records.js"></script>
     <script src="pitch-test-engine.js"></script>
     <script src="app.js"></script>
     <script>
@@ -933,6 +1021,91 @@
         window.addEventListener('load', () => {
             updateAdminUI();
         });
+
+        // ========== 練習紀錄頁面功能 ==========
+
+        // 開啟練習紀錄頁面
+        function openRecordsPage() {
+            document.getElementById('songListPage').style.display = 'none';
+            document.getElementById('recordsPage').style.display = 'block';
+            loadRecordsPage();
+        }
+
+        // 關閉練習紀錄頁面
+        function closeRecordsPage() {
+            document.getElementById('recordsPage').style.display = 'none';
+            document.getElementById('songListPage').style.display = 'block';
+        }
+
+        // 載入練習紀錄頁面
+        function loadRecordsPage() {
+            // 更新整體統計
+            const stats = getOverallStats();
+            document.getElementById('totalPractices').textContent = stats.totalPractices;
+            document.getElementById('totalSongs').textContent = stats.totalSongs;
+            document.getElementById('avgAccuracy').textContent = stats.avgAccuracy + '%';
+            document.getElementById('totalTime').textContent = formatTime(stats.totalTime);
+
+            // 渲染練習紀錄列表
+            renderRecordsList();
+        }
+
+        // 渲染練習紀錄列表
+        function renderRecordsList() {
+            const recordsList = document.getElementById('recordsList');
+            const records = getRecentRecords(20); // 顯示最近 20 筆
+
+            if (records.length === 0) {
+                recordsList.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #aaa;">
+                        尚無練習紀錄<br>
+                        完成第一次測試後，紀錄會自動顯示在這裡
+                    </div>
+                `;
+                return;
+            }
+
+            recordsList.innerHTML = records.map(record => {
+                const grade = getScoreGrade(record.accuracy);
+                const date = formatDate(record.timestamp);
+                const duration = formatTime(record.duration);
+
+                return `
+                    <div style="background: rgba(255,255,255,0.05); padding: 20px; border-radius: 10px; border-left: 4px solid ${grade.color};">
+                        <div style="display: flex; justify-content: space-between; align-items: start; flex-wrap: wrap; gap: 15px;">
+                            <div style="flex: 1; min-width: 200px;">
+                                <h3 style="margin: 0 0 10px 0; color: var(--text);">🎵 ${record.songTitle}</h3>
+                                <div style="color: #aaa; font-size: 0.9em;">
+                                    📅 ${date} | ⏱️ ${duration}
+                                </div>
+                            </div>
+                            <div style="text-align: right;">
+                                <div style="font-size: 2em; font-weight: bold; color: ${grade.color};">
+                                    ${record.accuracy}%
+                                </div>
+                                <div style="color: ${grade.color}; margin-top: 5px;">
+                                    ${grade.stars} ${grade.text}
+                                </div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 15px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9em; color: #aaa;">
+                            <span>⭐ 完美: ${record.perfectNotes}</span>
+                            <span>👍 良好: ${record.goodNotes}</span>
+                            <span>⚠️ 待改進: ${record.poorNotes}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 確認清空紀錄
+        function confirmClearRecords() {
+            if (confirm('確定要清空所有練習紀錄嗎？\n\n此操作無法復原，建議先匯出備份！')) {
+                clearAllRecords();
+                loadRecordsPage();
+                alert('✅ 所有練習紀錄已清空');
+            }
+        }
     </script>
 </body>
 </html>
