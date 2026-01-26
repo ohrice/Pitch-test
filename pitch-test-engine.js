@@ -408,76 +408,59 @@ function parseMIDI(arrayBuffer) {
     return filteredNotes;
 }
 
-// 過濾重疊的音符，只保留主旋律（只過濾同時開始的和弦）
+// 處理重疊音符：過濾和弦 + 裁剪 legato 重疊
 function filterOverlappingNotes(notes) {
     if (notes.length === 0) return notes;
 
+    // 第一步：按開始時間排序
+    const sorted = [...notes].sort((a, b) => a.startTime - b.startTime);
+
     const result = [];
-    const startTimeThreshold = 0.05; // 50 毫秒內視為同時開始（和弦），降低閾值更精確
+    const startTimeThreshold = 0.05; // 50 毫秒內視為同時開始（和弦）
 
-    // 診斷：顯示 32-34 秒區間的音符及重疊情況
-    const debugNotes = notes.filter(n =>
-        (n.startTime >= 32 && n.startTime <= 34) ||
-        (n.endTime >= 32 && n.endTime <= 34)
-    );
-    if (debugNotes.length > 0) {
-        console.log('=== 32-34秒區間的音符詳情（包含跨越此區間的音符）===');
-        debugNotes.forEach((n, idx) => {
-            const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][n.note % 12];
-            const octave = Math.floor(n.note / 12) - 1;
-            console.log(`  音符${idx + 1}: ${noteName}${octave} (MIDI${n.note}), 開始=${n.startTime.toFixed(3)}s, 結束=${n.endTime.toFixed(3)}s, 長度=${n.duration.toFixed(3)}s`);
-
-            // 檢查視覺重疊
-            const overlapping = debugNotes.filter(other =>
-                other !== n &&
-                ((n.startTime < other.endTime && n.endTime > other.startTime))
-            );
-            if (overlapping.length > 0) {
-                overlapping.forEach(o => {
-                    const oName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][o.note % 12];
-                    const oOctave = Math.floor(o.note / 12) - 1;
-                    console.log(`    ⚠️ 時間重疊: ${oName}${oOctave} (${o.startTime.toFixed(3)}s - ${o.endTime.toFixed(3)}s)`);
-                });
-            }
-        });
-    }
-
-    for (let i = 0; i < notes.length; i++) {
-        const currentNote = notes[i];
+    for (let i = 0; i < sorted.length; i++) {
+        const currentNote = { ...sorted[i] }; // 複製以便修改
         let shouldKeep = true;
 
-        // 只檢查是否有「同時開始」的其他音符
-        for (let j = 0; j < notes.length; j++) {
+        // 檢查是否有同時開始的更高音符（和弦過濾）
+        for (let j = 0; j < sorted.length; j++) {
             if (i === j) continue;
-
-            const otherNote = notes[j];
-
-            // 檢查是否同時開始（開始時間非常接近）
+            const otherNote = sorted[j];
             const timeDiff = Math.abs(currentNote.startTime - otherNote.startTime);
-            const startAtSameTime = timeDiff < startTimeThreshold;
 
-            if (startAtSameTime) {
-                // 如果同時開始且對方音符更高，則捨棄當前音符（保留和弦中的最高音）
-                if (otherNote.note > currentNote.note) {
-                    shouldKeep = false;
-
-                    // 診斷：記錄被過濾的音符
-                    if (currentNote.startTime >= 32 && currentNote.startTime <= 34) {
-                        const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][currentNote.note % 12];
-                        const octave = Math.floor(currentNote.note / 12) - 1;
-                        console.log(`  ❌ 過濾: ${noteName}${octave} (MIDI${currentNote.note})（因為有更高的 MIDI${otherNote.note}，開始時間差僅 ${(timeDiff * 1000).toFixed(1)}ms）`);
-                    }
-                    break;
-                }
+            if (timeDiff < startTimeThreshold && otherNote.note > currentNote.note) {
+                shouldKeep = false;
+                console.log(`  ❌ 過濾和弦低音: MIDI${currentNote.note}（有更高的 MIDI${otherNote.note}）`);
+                break;
             }
         }
 
         if (shouldKeep) {
-            result.push(currentNote);
+            // 檢查下一個音符，裁剪 legato 重疊
+            if (i + 1 < sorted.length) {
+                const nextNote = sorted[i + 1];
+
+                // 如果當前音符的結束時間超過下一個音符的開始時間（legato）
+                if (currentNote.endTime > nextNote.startTime) {
+                    const originalEnd = currentNote.endTime;
+                    // 裁剪到下一個音符開始前（留 10ms 間隙避免重疊）
+                    currentNote.endTime = nextNote.startTime - 0.01;
+                    currentNote.duration = currentNote.endTime - currentNote.startTime;
+
+                    if (currentNote.startTime >= 32 && currentNote.startTime <= 34) {
+                        console.log(`  ✂️ 裁剪 legato: MIDI${currentNote.note}, ${originalEnd.toFixed(3)}s → ${currentNote.endTime.toFixed(3)}s`);
+                    }
+                }
+            }
+
+            // 確保持續時間合理
+            if (currentNote.duration > 0.01) {
+                result.push(currentNote);
+            }
         }
     }
 
-    console.log(`過濾和弦音符: 原始 ${notes.length} 個，保留 ${result.length} 個音符（移除了 ${notes.length - result.length} 個和弦低音）`);
+    console.log(`音符處理: 原始 ${notes.length} 個，保留 ${result.length} 個（過濾 ${notes.length - result.length} 個和弦，裁剪了 legato 重疊）`);
     return result;
 }
 
