@@ -666,9 +666,9 @@
     <!-- 音準測試頁面 -->
     <div id="testPage">
         <div class="test-header">
-            <div>
-                <h2 id="currentSongTitle">歌曲名稱</h2>
-                <p id="currentSongArtist" style="margin: 5px 0 0 0; color: #aaa;">歌手名稱</p>
+            <div style="display: flex; align-items: baseline; gap: 15px;">
+                <h2 id="currentSongTitle" style="margin: 0;">歌曲名稱</h2>
+                <span id="currentSongArtist" style="color: #aaa; font-size: 16px;">一部</span>
             </div>
         </div>
 
@@ -679,16 +679,17 @@
                 <div style="font-size: 14px; color: #aaa;">測試前請確認手機音量已開啟，以便聽到伴奏音樂</div>
             </div>
 
-            <!-- 麥克風音量監控 -->
-            <div class="accuracy-meter" style="margin-bottom: 10px;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                    <div class="meter-label" style="margin-bottom: 0;">麥克風音量</div>
-                    <button id="testMicBtn" style="padding: 6px 15px; font-size: 14px; background: #3273dc;">測試麥克風</button>
+            <!-- 麥克風測試 -->
+            <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <button id="testMicBtn" style="padding: 10px 20px; font-size: 16px; background: #3273dc; border-radius: 8px;">測試麥克風</button>
+                    <div id="volumeText" style="color: #00d1b2; font-size: 24px; font-weight: bold;">0%</div>
                 </div>
-                <div style="background: rgba(0,0,0,0.3); height: 30px; border-radius: 5px; overflow: hidden; position: relative;">
-                    <div id="volumeMeter" style="height: 100%; width: 0%; background: linear-gradient(90deg, #48c774, #ffdd57, #f14668); transition: width 0.1s;"></div>
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 12px; font-weight: bold;" id="volumeText">0%</div>
-                </div>
+            </div>
+
+            <!-- 狀態列 -->
+            <div class="status-panel" id="statusText" style="margin-bottom: 15px;">
+                狀態：準備就緒
             </div>
 
             <!-- 即時音準指示器 -->
@@ -709,10 +710,6 @@
                 <button onclick="backToSongList()" style="background: #3273dc;">← 返回歌曲列表</button>
                 <button id="startBtn">開始測試</button>
                 <button id="stopBtn" style="background: #ff3860;">停止</button>
-            </div>
-
-            <div class="status-panel" id="statusText">
-                狀態：準備就緒
             </div>
 
             <!-- 測試結果面板 -->

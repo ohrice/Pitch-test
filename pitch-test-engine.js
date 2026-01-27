@@ -1527,14 +1527,12 @@ if (stopBtn) {
 
 // 更新音量監控顯示
 function updateVolumeMeter(rms) {
-    const volumeMeter = document.getElementById('volumeMeter');
     const volumeText = document.getElementById('volumeText');
 
     // 將 RMS 轉換為百分比 (0.0 - 0.3 對應 0% - 100%)
     const volumePercent = Math.min(100, (rms / 0.3) * 100);
 
-    if (volumeMeter && volumeText) {
-        volumeMeter.style.width = `${volumePercent}%`;
+    if (volumeText) {
         volumeText.textContent = `${Math.round(volumePercent)}%`;
     }
 }
