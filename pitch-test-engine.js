@@ -808,15 +808,21 @@ function renderPianoRoll(currentTime = -1) {
 
 // 計算最終結果
 function calculateFinalResults() {
-    // 如果沒有任何採樣點，返回空結果
+    // 如果沒有任何採樣點，返回空結果（所有音符都未唱到）
     if (accuracyScores.length === 0) {
+        const totalNotes = originalMidiNotes.length > 0 ? originalMidiNotes.length : melodyTemplate.length;
         return {
             avgAccuracy: 0,
             finalScore: 0,
             perfectNotes: 0,
             goodNotes: 0,
             poorNotes: 0,
-            totalNotes: melodyTemplate.length
+            notPreciseNotes: 0,
+            notSungNotes: totalNotes,  // 所有音符都未唱到
+            totalNotes: totalNotes,
+            scoredNotes: 0,            // 沒有任何音符被評分
+            coverageRate: 0,           // 覆蓋率 0%
+            isValid: false             // 測試無效
         };
     }
 
@@ -974,6 +980,7 @@ function displayResults() {
     // 🎯 顯示測試有效性警告（覆蓋率 < 50%）
     const resultsPanel = document.getElementById('resultsPanel');
     const scoreDisplay = resultsPanel.querySelector('.score-display');
+    const statsGrid = resultsPanel.querySelector('.stats-grid');
 
     // 移除舊的警告訊息（如果有）
     const oldWarning = resultsPanel.querySelector('.test-invalid-warning');
@@ -999,11 +1006,13 @@ function displayResults() {
 
         // 隱藏總分和統計區塊（測試無效時不顯示分數）
         if (scoreDisplay) scoreDisplay.style.display = 'none';
+        if (statsGrid) statsGrid.style.display = 'none';
         resultsPanel.insertBefore(warningDiv, scoreDisplay);
         console.log(`⚠️ 測試無效: 覆蓋率 ${(results.coverageRate * 100).toFixed(1)}%，僅唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
     } else {
         // 測試有效：顯示總分和統計區塊
         if (scoreDisplay) scoreDisplay.style.display = 'block';
+        if (statsGrid) statsGrid.style.display = 'grid';
 
         const coveragePercent = (results.coverageRate * 100).toFixed(0);
         console.log(`✅ 測試有效: 覆蓋率 ${coveragePercent}%，唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
