@@ -88,8 +88,8 @@
             height: 60px;
             border-radius: 50%;
             background: var(--card-bg);
-            border: 3px solid var(--accent);
-            box-shadow: 0 4px 15px var(--shadow);
+            border: 4px solid var(--accent);
+            box-shadow: 0 4px 15px var(--shadow), 0 0 0 2px var(--card-bg);
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -799,15 +799,15 @@
 
         <div class="test-container">
             <!-- 聲音提醒 -->
-            <div style="background: rgba(255, 221, 87, 0.15); border: 2px solid #ffdd57; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
-                <div style="font-size: 24px; font-weight: bold; color: #ffdd57; margin-bottom: 8px;">🔊 請開啟聲音</div>
-                <div style="font-size: 14px; color: #aaa;">測試前請確認手機音量已開啟，以便聽到伴奏音樂</div>
+            <div style="background: #e0bb53; border: none; border-radius: 10px; padding: 15px; margin-bottom: 15px; text-align: center;">
+                <div style="font-size: 24px; font-weight: bold; color: #ffffff; margin-bottom: 8px;">🔊 請開啟聲音</div>
+                <div style="font-size: 14px; color: #ffffff; opacity: 0.95;">測試前請確認手機音量已開啟，以便聽到伴奏音樂</div>
             </div>
 
             <!-- 麥克風測試 -->
             <div style="background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin-bottom: 10px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <button id="testMicBtn" style="padding: 10px 20px; font-size: 16px; background: #3273dc; border-radius: 8px;">測試麥克風</button>
+                    <button id="testMicBtn" style="padding: 10px 20px; font-size: 16px; background: #937cb0; color: #ffffff; border: none; border-radius: 8px; font-weight: 600;">測試麥克風</button>
                     <div id="volumeText" style="color: #00d1b2; font-size: 24px; font-weight: bold;">0%</div>
                 </div>
             </div>
@@ -820,7 +820,7 @@
             <!-- 控制按鈕（開始/停止） -->
             <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 15px;">
                 <button id="startBtn" style="flex: 1; max-width: 200px;">開始測試</button>
-                <button id="stopBtn" style="flex: 1; max-width: 200px; background: #ff3860;">停止</button>
+                <button id="stopBtn" style="flex: 1; max-width: 200px; background: #d7645d; color: #ffffff;">停止</button>
             </div>
 
             <div class="visualizer-container" style="display: flex; gap: 0;">
