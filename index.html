@@ -408,16 +408,17 @@
         .results-panel {
             margin-top: 20px;
             padding: 20px;
-            background: rgba(0,209,178,0.1);
-            border: 2px solid var(--accent);
-            border-radius: 10px;
+            background: #f5ede0;
+            border: 3px solid var(--morandi-cyan);
+            border-radius: 15px;
             display: none;
         }
 
         .results-panel h3 {
             text-align: center;
             margin-top: 0;
-            color: var(--accent);
+            color: var(--morandi-cyan);
+            font-size: 1.5em;
         }
 
         .score-display {
@@ -428,12 +429,13 @@
         .score-big {
             font-size: 64px;
             font-weight: bold;
-            color: var(--accent);
+            color: var(--morandi-cyan);
         }
 
         .score-label {
             font-size: 18px;
-            color: #aaa;
+            color: var(--text);
+            font-weight: 600;
         }
 
         .stats-grid {
@@ -445,14 +447,14 @@
         .stat-item {
             text-align: center;
             padding: 15px;
-            background: #f6eada;
-            border-radius: 8px;
+            background: #a8b8ba;
+            border-radius: 12px;
         }
 
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: var(--accent);
+            color: var(--morandi-cyan);
             margin-bottom: 5px;
         }
 
@@ -846,7 +848,7 @@
 
             <!-- 測試結果面板 -->
             <div class="results-panel" id="resultsPanel">
-                <h3>📊 測試結果</h3>
+                <h3>🎵 測試結果</h3>
                 <div class="score-display">
                     <div class="score-big" id="finalScore">-</div>
                     <div class="score-label">總分</div>
