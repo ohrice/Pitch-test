@@ -16,7 +16,7 @@ let noteScores = {}; // 記錄每個音符的所有採樣分數 { noteIndex: [sc
 const AUDIO_LATENCY_COMPENSATION = 0.22; // 220ms 補償（加大以改善視覺化延遲）
 
 // 音量閾值：低於此音量的聲音不計分（過濾環境音）
-const MIN_VOLUME_THRESHOLD = 0.15; // 15% 音量閾值
+const MIN_VOLUME_THRESHOLD = 0.08; // 8% 音量閾值（降低以提高手機靈敏度）
 
 // 錄音相關變數
 let mediaRecorder = null;
@@ -1513,6 +1513,11 @@ if (startBtn) {
             }
 
             document.getElementById('statusText').innerText = "狀態：測試完成！";
+
+            // 隱藏音量指示器
+            const volumeIndicator = document.getElementById('volumeIndicator');
+            if (volumeIndicator) volumeIndicator.style.display = 'none';
+
             displayResults();
         }
     };
@@ -1542,6 +1547,10 @@ if (startBtn) {
     const statusText = document.getElementById('statusText');
     if (statusText) statusText.innerText = `狀態：正在測試音準... ${recordingStatus}`;
 
+    // 顯示音量指示器
+    const volumeIndicator = document.getElementById('volumeIndicator');
+    if (volumeIndicator) volumeIndicator.style.display = 'block';
+
     // 診斷輸出
     console.log('開始測試，melodyTemplate 長度:', melodyTemplate.length);
     console.log('Canvas 尺寸:', canvas.width, 'x', canvas.height);
@@ -1567,6 +1576,10 @@ if (stopBtn) {
     const statusText = document.getElementById('statusText');
     if (statusText) statusText.innerText = "狀態：測試停止";
 
+    // 隱藏音量指示器
+    const volumeIndicator = document.getElementById('volumeIndicator');
+    if (volumeIndicator) volumeIndicator.style.display = 'none';
+
     if (accuracyScores.length > 0) {
         displayResults();
     }
@@ -1576,12 +1589,42 @@ if (stopBtn) {
 // 更新音量監控顯示
 function updateVolumeMeter(rms) {
     const volumeText = document.getElementById('volumeText');
+    const volumeBar = document.getElementById('volumeBar');
+    const volumeStatus = document.getElementById('volumeStatus');
 
     // 將 RMS 轉換為百分比 (0.0 - 0.3 對應 0% - 100%)
     const volumePercent = Math.min(100, (rms / 0.3) * 100);
+    const roundedPercent = Math.round(volumePercent);
 
+    // 更新百分比文字
     if (volumeText) {
-        volumeText.textContent = `${Math.round(volumePercent)}%`;
+        volumeText.textContent = `${roundedPercent}%`;
+    }
+
+    // 更新音量條寬度
+    if (volumeBar) {
+        volumeBar.style.width = `${volumePercent}%`;
+    }
+
+    // 根據音量閾值改變顏色和狀態文字
+    const thresholdPercent = (MIN_VOLUME_THRESHOLD / 0.3) * 100; // 8% → 約 27%
+
+    if (rms >= MIN_VOLUME_THRESHOLD) {
+        // 音量足夠：綠色
+        if (volumeBar) volumeBar.style.background = '#48c774'; // 綠色
+        if (volumeText) volumeText.style.color = '#48c774';
+        if (volumeStatus) {
+            volumeStatus.textContent = '🟢 正在記錄';
+            volumeStatus.style.color = '#48c774';
+        }
+    } else {
+        // 音量不足：紅色
+        if (volumeBar) volumeBar.style.background = '#d7645d'; // 紅色
+        if (volumeText) volumeText.style.color = '#d7645d';
+        if (volumeStatus) {
+            volumeStatus.textContent = `🔴 音量不足 (需 ≥${Math.round(thresholdPercent)}%)`;
+            volumeStatus.style.color = '#d7645d';
+        }
     }
 }
 
