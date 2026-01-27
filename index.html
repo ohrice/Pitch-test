@@ -13,13 +13,30 @@
             --primary-bg: #F5F0E8;
             --secondary-bg: #EDE7DD;
             --card-bg: #FFFBF5;
-            --accent: #9DB4C0;
-            --accent-pink: #E4C1C1;
+
+            /* 莫蘭迪 12 色 */
+            --morandi-blue: #5b86b1;
+            --morandi-green: #86a369;
+            --morandi-teal: #55a5a6;
+            --morandi-yellow: #e0bb53;
+            --morandi-purple: #937cb0;
+            --morandi-red: #d7645d;
+            --morandi-orange: #ea8945;
+            --morandi-pink: #da8099;
+            --morandi-cyan: #8ab1ce;
+            --morandi-mint: #85c5b5;
+            --morandi-tan: #c89f4f;
+            --morandi-brown: #b1776b;
+
+            /* 主要配色 */
+            --accent: var(--morandi-blue);
+            --accent-pink: var(--morandi-pink);
             --text: #472f21;
             --text-secondary: #6B5B4F;
-            --success: #A8C5A0;
-            --warning: #D9C5A0;
-            --danger: #C89B9B;
+            --text-on-color: #ffffff;
+            --success: var(--morandi-green);
+            --warning: var(--morandi-yellow);
+            --danger: var(--morandi-red);
             --border: #D4C4B8;
             --shadow: rgba(71, 47, 33, 0.12);
             --shadow-hover: rgba(71, 47, 33, 0.18);
@@ -100,7 +117,7 @@
         .header {
             text-align: center;
             padding: 40px 20px;
-            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-pink) 100%);
+            background: linear-gradient(135deg, var(--morandi-teal) 0%, var(--morandi-cyan) 100%);
             margin: -20px -20px 30px -20px;
             box-shadow: 0 8px 25px var(--shadow);
             border-radius: 0 0 30px 30px;
@@ -109,15 +126,15 @@
         .header h1 {
             margin: 0;
             font-size: 2.8em;
-            color: var(--card-bg);
+            color: #472f21;
             font-weight: 700;
             letter-spacing: 2px;
-            text-shadow: 2px 2px 8px rgba(255, 255, 255, 0.3);
+            text-shadow: 1px 1px 3px rgba(255, 255, 255, 0.5);
         }
 
         .header p {
             margin: 15px 0 0 0;
-            color: var(--card-bg);
+            color: var(--text-on-color);
             font-size: 1.1em;
             opacity: 0.95;
             font-weight: 500;
@@ -211,18 +228,21 @@
         }
 
         .difficulty.part1 {
-            background: rgba(72, 199, 116, 0.2);
-            color: var(--success);
+            background: var(--morandi-green);
+            color: var(--text-on-color);
+            font-weight: 700;
         }
 
         .difficulty.part2 {
-            background: rgba(255, 221, 87, 0.2);
-            color: var(--warning);
+            background: var(--morandi-orange);
+            color: var(--text-on-color);
+            font-weight: 700;
         }
 
         .difficulty.part3 {
-            background: rgba(186, 85, 211, 0.25);
-            color: #da70d6;
+            background: var(--morandi-purple);
+            color: var(--text-on-color);
+            font-weight: 700;
         }
 
         /* 測試頁面 */
@@ -251,16 +271,17 @@
             padding: 10px 25px;
             border-radius: 25px;
             border: none;
-            background: #555;
-            color: white;
+            background: var(--morandi-brown);
+            color: var(--text-on-color);
             font-weight: bold;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.2s;
+            transition: all 0.2s;
         }
 
         .back-btn:hover {
-            background: #666;
+            opacity: 0.9;
+            transform: translateY(-2px);
         }
 
         .test-container {
@@ -352,7 +373,7 @@
             border-radius: 50px;
             border: none;
             background: var(--accent);
-            color: var(--card-bg);
+            color: var(--text-on-color);
             font-weight: 700;
             cursor: pointer;
             font-size: 18px;
@@ -455,33 +476,41 @@
 
         /* 刪除按鈕 */
         .delete-btn {
-            background: rgba(241, 70, 104, 0.2);
+            background: var(--morandi-red);
+            color: var(--text-on-color);
             border: none;
             padding: 8px 12px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.2s;
+            font-weight: 600;
+            transition: all 0.2s;
+            opacity: 0.9;
         }
 
         .delete-btn:hover {
-            background: rgba(241, 70, 104, 0.4);
+            opacity: 1;
+            transform: scale(1.05);
         }
 
         /* 編輯按鈕 */
         .edit-btn {
-            background: rgba(0, 209, 178, 0.2);
+            background: var(--morandi-teal);
+            color: var(--text-on-color);
             border: none;
             padding: 8px 12px;
             border-radius: 8px;
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.2s;
+            font-weight: 600;
+            transition: all 0.2s;
             margin-right: 5px;
+            opacity: 0.9;
         }
 
         .edit-btn:hover {
-            background: rgba(0, 209, 178, 0.4);
+            opacity: 1;
+            transform: scale(1.05);
         }
 
         /* 管理員專用功能 - 預設隱藏 */
@@ -505,7 +534,7 @@
 
         .admin-login-btn:hover {
             background: var(--accent);
-            color: white;
+            color: var(--text-on-color);
         }
 
         /* 登入模態框 */
