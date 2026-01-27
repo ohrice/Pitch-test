@@ -1116,7 +1116,7 @@ if (testMicBtn) {
             }
             isTesting = false;
             testMicBtn.textContent = '測試麥克風';
-            testMicBtn.style.background = '#3273dc';
+            testMicBtn.style.background = '#937cb0';
             if (statusText) statusText.innerText = "狀態：麥克風測試已停止";
             return;
         }
