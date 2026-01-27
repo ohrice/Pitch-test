@@ -692,13 +692,10 @@
                 狀態：準備就緒
             </div>
 
-            <!-- 即時音準指示器 -->
-            <div class="accuracy-meter">
-                <div class="meter-label">即時音準</div>
-                <div class="meter-bar">
-                    <div class="meter-indicator" id="accuracyMeter"></div>
-                    <div class="meter-center-line"></div>
-                </div>
+            <!-- 控制按鈕（開始/停止） -->
+            <div style="display: flex; gap: 15px; justify-content: center; margin-bottom: 15px;">
+                <button id="startBtn" style="flex: 1; max-width: 200px;">開始測試</button>
+                <button id="stopBtn" style="flex: 1; max-width: 200px; background: #ff3860;">停止</button>
             </div>
 
             <div class="visualizer-container" style="display: flex; gap: 0;">
@@ -706,10 +703,18 @@
                 <canvas id="pianoRoll" style="flex-grow: 1;"></canvas>
             </div>
 
-            <div class="controls">
-                <button onclick="backToSongList()" style="background: #3273dc;">← 返回歌曲列表</button>
-                <button id="startBtn">開始測試</button>
-                <button id="stopBtn" style="background: #ff3860;">停止</button>
+            <!-- 音準顏色指示器 -->
+            <div class="accuracy-meter" style="margin-top: 15px;">
+                <div class="meter-label">音準顏色</div>
+                <div class="meter-bar">
+                    <div class="meter-indicator" id="accuracyMeter"></div>
+                    <div class="meter-center-line"></div>
+                </div>
+            </div>
+
+            <!-- 返回按鈕 -->
+            <div style="margin-top: 20px; text-align: center;">
+                <button onclick="backToSongList()" style="background: #3273dc; width: 100%; max-width: 400px; padding: 15px;">← 返回歌曲列表</button>
             </div>
 
             <!-- 測試結果面板 -->
