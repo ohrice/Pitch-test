@@ -15,6 +15,9 @@ let noteScores = {}; // 記錄每個音符的所有採樣分數 { noteIndex: [sc
 // 音訊延遲補償（秒）- 麥克風處理延遲約 150-250ms
 const AUDIO_LATENCY_COMPENSATION = 0.22; // 220ms 補償（加大以改善視覺化延遲）
 
+// 音量閾值：低於此音量的聲音不計分（過濾環境音）
+const MIN_VOLUME_THRESHOLD = 0.15; // 15% 音量閾值
+
 // 錄音相關變數
 let mediaRecorder = null;
 let recordedChunks = [];
@@ -878,7 +881,21 @@ function calculateFinalResults() {
         }
     });
 
-    console.log(`📊 評分統計: 總音符=${originalMidiNotes.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}`);
+    // 計算未唱到的音符數量
+    const notSungNotes = originalMidiNotes.length - scoredNotes;
+
+    // 計算覆蓋率（唱到的音符佔總音符的比例）
+    const coverageRate = scoredNotes / originalMidiNotes.length;
+
+    console.log(`📊 評分統計: 總音符=${originalMidiNotes.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}, 未唱到=${notSungNotes}`);
+    console.log(`📈 覆蓋率: ${(coverageRate * 100).toFixed(1)}% (${scoredNotes}/${originalMidiNotes.length})`);
+
+    // 🎯 有效性判斷：覆蓋率 < 50% 視為測試無效
+    const isValid = coverageRate >= 0.5;
+
+    if (!isValid) {
+        console.warn(`⚠️ 測試無效：覆蓋率僅 ${(coverageRate * 100).toFixed(1)}%，建議重新測試`);
+    }
 
     return {
         avgAccuracy: avgAccuracy.toFixed(1),
@@ -887,7 +904,10 @@ function calculateFinalResults() {
         goodNotes,
         poorNotes,
         totalNotes: originalMidiNotes.length,
-        scoredNotes // 實際評分的音符數
+        scoredNotes, // 實際評分的音符數
+        notSungNotes, // 未唱到的音符數
+        coverageRate, // 覆蓋率（0-1）
+        isValid // 測試是否有效
     };
 }
 
@@ -939,13 +959,41 @@ function displayResults() {
     document.getElementById('goodNotes').textContent = results.goodNotes;
     document.getElementById('poorNotes').textContent = results.poorNotes;
 
-    // 顯示已評分音符數量提示
-    const scoredRatio = results.scoredNotes / results.totalNotes;
-    if (scoredRatio < 0.8) {
-        console.log(`⚠️ 偵測率較低: 已評分 ${results.scoredNotes}/${results.totalNotes} 個音符 (${(scoredRatio * 100).toFixed(0)}%)`);
-        console.log('💡 建議: 請確保麥克風靠近嘴巴,音量足夠,並跟著橘色方塊一起唱');
+    // 🎯 顯示測試有效性警告（覆蓋率 < 50%）
+    const resultsPanel = document.getElementById('resultsPanel');
+    const scoreDisplay = resultsPanel.querySelector('.score-display');
+
+    // 移除舊的警告訊息（如果有）
+    const oldWarning = resultsPanel.querySelector('.test-invalid-warning');
+    if (oldWarning) oldWarning.remove();
+
+    if (!results.isValid) {
+        // 測試無效：顯示警告訊息
+        const warningDiv = document.createElement('div');
+        warningDiv.className = 'test-invalid-warning';
+        warningDiv.style.cssText = 'background: #d7645d; color: #ffffff; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: center; font-weight: 600;';
+        warningDiv.innerHTML = `
+            <div style="font-size: 48px; margin-bottom: 10px;">⚠️</div>
+            <div style="font-size: 20px; margin-bottom: 10px;">測試未完成</div>
+            <div style="font-size: 14px; opacity: 0.95;">
+                唱到的音符數：${results.scoredNotes} / ${results.totalNotes} (${(results.coverageRate * 100).toFixed(0)}%)<br>
+                建議覆蓋率：至少 50%<br><br>
+                💡 建議重新測試：<br>
+                • 確保麥克風音量足夠（≥15%）<br>
+                • 跟著橘色方塊完整演唱<br>
+                • 保持麥克風靠近嘴巴
+            </div>
+        `;
+        resultsPanel.insertBefore(warningDiv, scoreDisplay);
+        console.log(`⚠️ 測試無效: 覆蓋率 ${(results.coverageRate * 100).toFixed(1)}%，僅唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
     } else {
-        console.log(`✅ 偵測率良好: 已評分 ${results.scoredNotes}/${results.totalNotes} 個音符 (${(scoredRatio * 100).toFixed(0)}%)`);
+        // 測試有效：顯示正常提示
+        const coveragePercent = (results.coverageRate * 100).toFixed(0);
+        console.log(`✅ 測試有效: 覆蓋率 ${coveragePercent}%，唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
+
+        if (results.notSungNotes > 0) {
+            console.log(`💡 提示: 有 ${results.notSungNotes} 個音符未唱到，可以再試試看喔！`);
+        }
     }
 
     document.getElementById('resultsPanel').style.display = 'block';
@@ -1574,17 +1622,20 @@ function update() {
             const deviation = calculateDeviation(midiNote, targetNote.note);
             accuracy = calculateAccuracy(deviation);
 
-            // 將分數對應到對應的音符
-            const targetNoteIndex = melodyTemplate.findIndex(n => n === targetNote);
-            if (targetNoteIndex >= 0) {
-                if (!noteScores[targetNoteIndex]) {
-                    noteScores[targetNoteIndex] = [];
+            // 🎤 音量閾值檢查：只記錄音量足夠的採樣點（過濾環境音）
+            if (rms >= MIN_VOLUME_THRESHOLD) {
+                // 將分數對應到對應的音符
+                const targetNoteIndex = melodyTemplate.findIndex(n => n === targetNote);
+                if (targetNoteIndex >= 0) {
+                    if (!noteScores[targetNoteIndex]) {
+                        noteScores[targetNoteIndex] = [];
+                    }
+                    noteScores[targetNoteIndex].push(accuracy);
                 }
-                noteScores[targetNoteIndex].push(accuracy);
-            }
 
-            // 仍然記錄所有採樣點用於計算整體平均準確率
-            accuracyScores.push(accuracy);
+                // 仍然記錄所有採樣點用於計算整體平均準確率
+                accuracyScores.push(accuracy);
+            }
 
             // 更新即時指示器
             updateAccuracyMeter(deviation, midiNote, targetNote.note);
