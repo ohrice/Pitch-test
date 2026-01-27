@@ -79,6 +79,16 @@
             background-image: none;
         }
 
+        /* 深色模式下的結果面板 */
+        [data-theme="dark"] .results-panel {
+            background: var(--card-bg);
+            border-color: var(--accent);
+        }
+
+        [data-theme="dark"] .score-label {
+            color: var(--text-secondary);
+        }
+
         /* 主題切換按鈕 */
         .theme-toggle {
             position: fixed;
@@ -457,7 +467,7 @@
         .stat-value {
             font-size: 24px;
             font-weight: bold;
-            color: var(--morandi-cyan);
+            color: #ffffff;
             margin-bottom: 5px;
         }
 
@@ -465,6 +475,7 @@
             font-size: 12px;
             color: #ffffff;
             font-weight: 600;
+            opacity: 0.9;
         }
 
         /* 新增歌曲卡片 */
