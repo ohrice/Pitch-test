@@ -114,6 +114,15 @@ function extractStoragePath(url) {
 async function selectSong(song) {
     currentSong = song;
 
+    // 🔧 重要：清空之前的歌曲數據（避免 iPhone 快取問題）
+    melodyTemplate = [];
+    originalMidiNotes = [];
+    accompBuffer = null;
+    userPitchData = [];
+    accuracyScores = [];
+    noteScores = {};
+    console.log('✅ 已清空舊歌曲數據');
+
     // 切換到測試頁面
     document.getElementById('songListPage').style.display = 'none';
     document.getElementById('testPage').style.display = 'block';
@@ -151,6 +160,11 @@ async function selectSong(song) {
 
 // 從 Firebase 載入歌曲檔案
 async function loadSongFromStorage(song) {
+    // 🔍 除錯：記錄正在載入的歌曲資訊
+    console.log('==========================================');
+    console.log('🎵 開始載入歌曲:', song.title, '(ID:', song.id, ')');
+    console.log('==========================================');
+
     // Firebase 版本：使用 Firebase Storage SDK 下載檔案
     // 檢查歌曲資料格式（支援舊的 Base64 格式和新的 URL 格式）
     let midiFile, accompFile;
@@ -204,8 +218,9 @@ async function loadSongFromStorage(song) {
 
     // 分析 MIDI
     melodyTemplate = await analyzeMelody(midiFile);
-    console.log('MIDI 分析完成，melodyTemplate 長度:', melodyTemplate.length);
-    console.log('melodyTemplate 前 5 個:', melodyTemplate.slice(0, 5));
+    console.log('✅ MIDI 分析完成 -', song.title);
+    console.log('   melodyTemplate 長度:', melodyTemplate.length);
+    console.log('   melodyTemplate 前 5 個:', melodyTemplate.slice(0, 5));
 
     // 確保 renderPianoRoll 在全域可用
     if (typeof renderPianoRoll === 'function') {
@@ -239,8 +254,12 @@ async function loadSongFromStorage(song) {
 // 使用 XMLHttpRequest 下載檔案為 Blob（更好的移動端相容性）
 function downloadFileAsBlob(url, mimeType) {
     return new Promise((resolve, reject) => {
+        // 🔧 iPhone Safari 防快取：在 URL 加入時間戳記參數
+        const cacheBuster = `_t=${Date.now()}`;
+        const finalUrl = url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
+
         const xhr = new XMLHttpRequest();
-        xhr.open('GET', url, true);
+        xhr.open('GET', finalUrl, true);
         xhr.responseType = 'blob';
 
         // 顯示下載進度
