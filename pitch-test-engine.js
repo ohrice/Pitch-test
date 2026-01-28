@@ -878,14 +878,15 @@ function calculateFinalResults() {
             scoredNotes++;
             totalScore += noteAvg;
 
-            // 新的分數級距
+            // 新的分數級距（修正：使用 else 確保所有音符都被分類）
             if (noteAvg >= 90) {
                 perfectNotes++;
             } else if (noteAvg >= 70) {
                 goodNotes++;
             } else if (noteAvg >= 50) {
                 poorNotes++;
-            } else if (noteAvg >= 1) {
+            } else {
+                // 包含 0-49 分的所有情況（修正漏洞：之前只計算 >= 1，導致 0-1 分的音符被遺漏）
                 notPreciseNotes++;
             }
         } else {
@@ -904,6 +905,15 @@ function calculateFinalResults() {
     console.log(`📊 評分統計: 總音符=${originalMidiNotes.length}, 已評分=${scoredNotes}, 完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}, 不準=${notPreciseNotes}, 未唱=${notSungNotesCount}`);
     console.log(`📈 覆蓋率: ${(coverageRate * 100).toFixed(1)}% (${scoredNotes}/${originalMidiNotes.length})`);
     console.log(`🎯 總分計算: ${totalScore.toFixed(1)} / ${originalMidiNotes.length} = ${finalScore}`);
+
+    // 🔍 驗證分類總數（應該等於 originalMidiNotes.length）
+    const totalCategorized = perfectNotes + goodNotes + poorNotes + notPreciseNotes + notSungNotesCount;
+    if (totalCategorized !== originalMidiNotes.length) {
+        console.error(`❌ 分類總數錯誤: ${totalCategorized} ≠ ${originalMidiNotes.length}`);
+        console.error(`   完美=${perfectNotes}, 良好=${goodNotes}, 需改進=${poorNotes}, 不準=${notPreciseNotes}, 未唱=${notSungNotesCount}`);
+    } else {
+        console.log(`✅ 分類總數正確: ${totalCategorized} = ${originalMidiNotes.length}`);
+    }
 
     // 🎯 有效性判斷：覆蓋率 < 50% 視為測試無效
     const isValid = coverageRate >= 0.5;
