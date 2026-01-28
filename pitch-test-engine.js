@@ -998,9 +998,9 @@ function displayResults() {
                 唱到的音符數：${results.scoredNotes} / ${results.totalNotes} (${(results.coverageRate * 100).toFixed(0)}%)<br>
                 建議覆蓋率：至少 50%<br><br>
                 💡 建議重新測試：<br>
-                • 確保麥克風音量足夠（≥8%）<br>
                 • 跟著橘色方塊完整演唱<br>
-                • 保持麥克風靠近嘴巴
+                • 保持麥克風靠近嘴巴<br>
+                • 確保環境安靜，減少干擾
             </div>
         `;
 
@@ -1632,24 +1632,30 @@ function updateVolumeMeter(rms) {
         volumeBar.style.width = `${volumePercent}%`;
     }
 
-    // 根據音量閾值改變顏色和狀態文字
-    const thresholdPercent = (MIN_VOLUME_THRESHOLD / 0.3) * 100; // 8% → 約 27%
-
-    if (rms >= MIN_VOLUME_THRESHOLD) {
-        // 音量足夠：綠色
-        if (volumeBar) volumeBar.style.background = '#48c774'; // 綠色
+    // 根據音量大小改變顏色（僅供參考，不影響記錄）
+    if (volumePercent > 15) {
+        // 音量較大：綠色
+        if (volumeBar) volumeBar.style.background = '#48c774';
         if (volumeText) volumeText.style.color = '#48c774';
         if (volumeStatus) {
-            volumeStatus.textContent = '🟢 正在記錄';
+            volumeStatus.textContent = '🎤 收音中';
             volumeStatus.style.color = '#48c774';
         }
-    } else {
-        // 音量不足：紅色
-        if (volumeBar) volumeBar.style.background = '#d7645d'; // 紅色
-        if (volumeText) volumeText.style.color = '#d7645d';
+    } else if (volumePercent > 5) {
+        // 音量中等：黃色
+        if (volumeBar) volumeBar.style.background = '#e0bb53';
+        if (volumeText) volumeText.style.color = '#e0bb53';
         if (volumeStatus) {
-            volumeStatus.textContent = `🔴 音量不足 (需 ≥${Math.round(thresholdPercent)}%)`;
-            volumeStatus.style.color = '#d7645d';
+            volumeStatus.textContent = '🎤 收音中';
+            volumeStatus.style.color = '#e0bb53';
+        }
+    } else {
+        // 音量很小：灰色
+        if (volumeBar) volumeBar.style.background = '#aaa';
+        if (volumeText) volumeText.style.color = '#aaa';
+        if (volumeStatus) {
+            volumeStatus.textContent = '🎤 等待聲音';
+            volumeStatus.style.color = '#aaa';
         }
     }
 }
@@ -1691,20 +1697,18 @@ function update() {
             const deviation = calculateDeviation(midiNote, targetNote.note);
             accuracy = calculateAccuracy(deviation);
 
-            // 🎤 音量閾值檢查：只記錄音量足夠的採樣點（過濾環境音）
-            if (rms >= MIN_VOLUME_THRESHOLD) {
-                // 將分數對應到對應的音符
-                const targetNoteIndex = melodyTemplate.findIndex(n => n === targetNote);
-                if (targetNoteIndex >= 0) {
-                    if (!noteScores[targetNoteIndex]) {
-                        noteScores[targetNoteIndex] = [];
-                    }
-                    noteScores[targetNoteIndex].push(accuracy);
+            // 記錄分數（移除音量閾值檢查，解決低音未被記錄問題）
+            // 將分數對應到對應的音符
+            const targetNoteIndex = melodyTemplate.findIndex(n => n === targetNote);
+            if (targetNoteIndex >= 0) {
+                if (!noteScores[targetNoteIndex]) {
+                    noteScores[targetNoteIndex] = [];
                 }
-
-                // 仍然記錄所有採樣點用於計算整體平均準確率
-                accuracyScores.push(accuracy);
+                noteScores[targetNoteIndex].push(accuracy);
             }
+
+            // 記錄所有採樣點用於計算整體平均準確率
+            accuracyScores.push(accuracy);
 
             // 更新即時指示器
             updateAccuracyMeter(deviation, midiNote, targetNote.note);
