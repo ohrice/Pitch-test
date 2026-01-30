@@ -915,6 +915,30 @@ function calculateFinalResults() {
         console.log(`✅ 分類總數正確: ${totalCategorized} = ${originalMidiNotes.length}`);
     }
 
+    // 🔍 診斷：顯示前 10 個音符的詳細評分（幫助診斷音準問題）
+    console.log('🔍 前 10 個音符的詳細評分：');
+    originalMidiNotes.slice(0, 10).forEach((midiNote, index) => {
+        const noteScoresList = [];
+        melodyTemplate.forEach((point, pointIndex) => {
+            if (point.time >= midiNote.startTime && point.time <= midiNote.endTime) {
+                if (Math.abs(point.note - midiNote.note) < 1.0) {
+                    if (noteScores[pointIndex] && noteScores[pointIndex].length > 0) {
+                        noteScoresList.push(...noteScores[pointIndex]);
+                    }
+                }
+            }
+        });
+
+        if (noteScoresList.length > 0) {
+            const noteAvg = noteScoresList.reduce((a, b) => a + b, 0) / noteScoresList.length;
+            const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][Math.round(midiNote.note) % 12];
+            const octave = Math.floor(Math.round(midiNote.note) / 12) - 1;
+            console.log(`   #${index + 1}: ${noteName}${octave} (MIDI ${Math.round(midiNote.note)}) - ${midiNote.startTime.toFixed(2)}s → 平均分數: ${noteAvg.toFixed(1)}`);
+        } else {
+            console.log(`   #${index + 1}: 未評分（未檢測到聲音）`);
+        }
+    });
+
     // 🎯 有效性判斷：覆蓋率 < 50% 視為測試無效
     const isValid = coverageRate >= 0.5;
 
@@ -1720,6 +1744,15 @@ function update() {
         if (targetNote) {
             const deviation = calculateDeviation(midiNote, targetNote.note);
             accuracy = calculateAccuracy(deviation);
+
+            // 🔍 診斷：每 2 秒記錄一次檢測到的音高和偏差
+            if (Math.random() < 0.033) { // 約每 2 秒一次 (1/60 * 2 ≈ 0.033)
+                const noteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][Math.round(midiNote) % 12];
+                const octave = Math.floor(Math.round(midiNote) / 12) - 1;
+                const targetNoteName = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'][Math.round(targetNote.note) % 12];
+                const targetOctave = Math.floor(Math.round(targetNote.note) / 12) - 1;
+                console.log(`🎵 ${now.toFixed(1)}s - 檢測: ${noteName}${octave} (${midiNote.toFixed(1)}) | 目標: ${targetNoteName}${targetOctave} (${targetNote.note.toFixed(1)}) | 偏差: ${deviation.toFixed(2)} 半音 | 分數: ${accuracy}`);
+            }
 
             // 記錄分數（移除音量閾值檢查，解決低音未被記錄問題）
             // 將分數對應到對應的音符
