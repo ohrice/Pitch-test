@@ -1303,8 +1303,22 @@ function testMicLoop() {
     testMicAnalyser.getFloatTimeDomainData(dataArray);
     const { pitch, clarity, rms } = autoCorrelate(dataArray, audioCtx.sampleRate, true);
 
-    // 更新音量顯示
-    updateVolumeMeter(rms);
+    // 更新「測試麥克風」按鈕旁的音量顯示
+    const testMicVolumeText = document.getElementById('testMicVolumeText');
+    if (testMicVolumeText) {
+        const volumePercent = Math.min(100, (rms / 0.3) * 100);
+        const roundedPercent = Math.round(volumePercent);
+        testMicVolumeText.textContent = `${roundedPercent}%`;
+
+        // 根據音量改變顏色
+        if (volumePercent > 15) {
+            testMicVolumeText.style.color = '#48c774'; // 綠色
+        } else if (volumePercent > 5) {
+            testMicVolumeText.style.color = '#e0bb53'; // 黃色
+        } else {
+            testMicVolumeText.style.color = '#aaa'; // 灰色
+        }
+    }
 
     requestAnimationFrame(testMicLoop);
 }
