@@ -1010,8 +1010,7 @@ function saveRecording() {
     // 通知使用者
     const statusText = document.getElementById('statusText');
     if (statusText) {
-        const currentText = statusText.innerText;
-        statusText.innerText = currentText + ` | 錄音已下載: ${filename}`;
+        statusText.innerText = `狀態：測試完成！錄音已下載: ${filename}`;
     }
 
     // 清空錄音資料
@@ -1125,15 +1124,10 @@ function savePracticeToLocalStorage(results) {
 
 // 更新紀錄提示
 function updateRecordHints(record) {
-    // 檢查是否為新的最佳成績
-    const bestScore = typeof getBestScore === 'function' ? getBestScore(record.songId) : null;
-
-    if (bestScore !== null && record.accuracy >= bestScore) {
-        // 顯示新紀錄提示
-        const statusText = document.getElementById('statusText');
-        if (statusText) {
-            statusText.innerText = `狀態：測試完成！🎉 恭喜！這是您的最佳成績！`;
-        }
+    // 暫時移除最佳成績提示（評分系統調整中）
+    const statusText = document.getElementById('statusText');
+    if (statusText) {
+        statusText.innerText = `狀態：測試完成！`;
     }
 }
 
