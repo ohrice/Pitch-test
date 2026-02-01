@@ -24,6 +24,10 @@ let recordedChunks = [];
 let isRecording = false;
 let mixedStream = null;
 
+// 錄音音量設定（可由用戶調整）
+let accompVolume = 0.8;  // 伴奏音量（預設 80%）
+let micVolume = 1.8;     // 人聲音量（預設 180%）
+
 // 檢測移動裝置和瀏覽器
 const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 const isChrome = /Chrome|CriOS/i.test(navigator.userAgent) && !/Edge/i.test(navigator.userAgent);
@@ -1520,17 +1524,17 @@ if (startBtn) {
         try {
             const destination = audioCtx.createMediaStreamDestination();
 
-            // 建立伴奏增益節點（調整伴奏音量）
+            // 建立伴奏增益節點（使用用戶設定的音量）
             const accompGain = audioCtx.createGain();
-            accompGain.gain.value = 0.8; // 伴奏提升至 80%（從 40% 提高）
+            accompGain.gain.value = accompVolume; // 使用全域變數（用戶可調整）
 
             // 建立伴奏延遲節點（補償麥克風處理延遲）
             const accompDelay = audioCtx.createDelay(1.0);
             accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 220ms
 
-            // 建立麥克風增益節點（調整人聲音量）
+            // 建立麥克風增益節點（使用用戶設定的音量）
             const micGain = audioCtx.createGain();
-            micGain.gain.value = 1.8; // 麥克風放大 1.8 倍（從 4.0 降低，避免人聲過大）
+            micGain.gain.value = micVolume; // 使用全域變數（用戶可調整）
 
             // 伴奏 → 增益 → 延遲 → 混音輸出
             sourceNode.connect(accompGain);
@@ -1544,7 +1548,7 @@ if (startBtn) {
 
             mixedStream = destination.stream;
 
-            console.log(`✅ 錄音混音設定：伴奏 80% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 180%（平衡音量）`);
+            console.log(`✅ 錄音混音設定：伴奏 ${Math.round(accompVolume*100)}% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 ${Math.round(micVolume*100)}%`);
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
@@ -1810,4 +1814,84 @@ function update() {
 
     renderPianoRoll(now);
     requestAnimationFrame(update);
+}
+
+// ========== 錄音音量調整功能 ==========
+
+// 從 localStorage 載入音量設定
+function loadVolumeSettings() {
+    const savedAccompVolume = localStorage.getItem('accompVolume');
+    const savedMicVolume = localStorage.getItem('micVolume');
+
+    if (savedAccompVolume !== null) {
+        accompVolume = parseFloat(savedAccompVolume);
+    }
+    if (savedMicVolume !== null) {
+        micVolume = parseFloat(savedMicVolume);
+    }
+
+    console.log('載入音量設定：伴奏 ' + Math.round(accompVolume*100) + '%, 人聲 ' + Math.round(micVolume*100) + '%');
+}
+
+// 儲存音量設定到 localStorage
+function saveVolumeSettings() {
+    localStorage.setItem('accompVolume', accompVolume.toString());
+    localStorage.setItem('micVolume', micVolume.toString());
+}
+
+// 更新滑桿背景漸層
+function updateSliderBackground(slider, value, min, max) {
+    const percentage = ((value - min) / (max - min)) * 100;
+    const color = slider.id === 'accompVolumeSlider' ? '#00d1b2' : '#e0bb53';
+    slider.style.background = 'linear-gradient(to right, ' + color + ' 0%, ' + color + ' ' + percentage + '%, #555 ' + percentage + '%, #555 100%)';
+}
+
+// 初始化音量滑桿
+function initVolumeSliders() {
+    const accompSlider = document.getElementById('accompVolumeSlider');
+    const micSlider = document.getElementById('micVolumeSlider');
+    const accompValue = document.getElementById('accompVolumeValue');
+    const micValue = document.getElementById('micVolumeValue');
+
+    if (!accompSlider || !micSlider) return;
+
+    // 載入設定
+    loadVolumeSettings();
+
+    // 設定滑桿初始值
+    accompSlider.value = Math.round(accompVolume * 100);
+    micSlider.value = Math.round(micVolume * 100);
+    accompValue.textContent = Math.round(accompVolume * 100) + '%';
+    micValue.textContent = Math.round(micVolume * 100) + '%';
+
+    // 更新滑桿背景
+    updateSliderBackground(accompSlider, accompSlider.value, 0, 100);
+    updateSliderBackground(micSlider, micSlider.value, 50, 250);
+
+    // 伴奏音量滑桿事件
+    accompSlider.addEventListener('input', function(e) {
+        const value = parseInt(e.target.value);
+        accompVolume = value / 100;
+        accompValue.textContent = value + '%';
+        updateSliderBackground(accompSlider, value, 0, 100);
+        saveVolumeSettings();
+        console.log('伴奏音量調整為: ' + value + '%');
+    });
+
+    // 人聲音量滑桿事件
+    micSlider.addEventListener('input', function(e) {
+        const value = parseInt(e.target.value);
+        micVolume = value / 100;
+        micValue.textContent = value + '%';
+        updateSliderBackground(micSlider, value, 50, 250);
+        saveVolumeSettings();
+        console.log('人聲音量調整為: ' + value + '%');
+    });
+}
+
+// 頁面載入時初始化
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initVolumeSliders);
+} else {
+    initVolumeSliders();
 }
