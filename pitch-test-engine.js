@@ -1044,9 +1044,9 @@ function displayResults() {
         resultsPanel.insertBefore(warningDiv, scoreDisplay);
         console.log(`⚠️ 測試無效: 覆蓋率 ${(results.coverageRate * 100).toFixed(1)}%，僅唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
     } else {
-        // 測試有效：顯示總分和統計區塊
+        // 測試有效：顯示總分，暫時隱藏統計區塊（評分系統調整中）
         if (scoreDisplay) scoreDisplay.style.display = 'block';
-        if (statsGrid) statsGrid.style.display = 'grid';
+        if (statsGrid) statsGrid.style.display = 'none'; // 暫時隱藏詳細統計
 
         const coveragePercent = (results.coverageRate * 100).toFixed(0);
         console.log(`✅ 測試有效: 覆蓋率 ${coveragePercent}%，唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
