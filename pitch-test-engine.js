@@ -1056,13 +1056,14 @@ function displayResults() {
         }
     }
 
-    document.getElementById('resultsPanel').style.display = 'block';
+    // 暫時完全隱藏結果面板（評分系統調整中）
+    document.getElementById('resultsPanel').style.display = 'none';
 
     // 儲存練習紀錄
     savePracticeToLocalStorage(results);
 
-    // 滾動到結果區域
-    document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth' });
+    // 不需要滾動到結果區域（因為已隱藏）
+    // document.getElementById('resultsPanel').scrollIntoView({ behavior: 'smooth' });
 }
 
 // 儲存練習紀錄到 localStorage
