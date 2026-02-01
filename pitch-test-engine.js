@@ -1044,8 +1044,8 @@ function displayResults() {
         resultsPanel.insertBefore(warningDiv, scoreDisplay);
         console.log(`⚠️ 測試無效: 覆蓋率 ${(results.coverageRate * 100).toFixed(1)}%，僅唱到 ${results.scoredNotes}/${results.totalNotes} 個音符`);
     } else {
-        // 測試有效：顯示總分，暫時隱藏統計區塊（評分系統調整中）
-        if (scoreDisplay) scoreDisplay.style.display = 'block';
+        // 測試有效：暫時隱藏所有評分區域（評分系統調整中）
+        if (scoreDisplay) scoreDisplay.style.display = 'none'; // 暫時隱藏總分
         if (statsGrid) statsGrid.style.display = 'none'; // 暫時隱藏詳細統計
 
         const coveragePercent = (results.coverageRate * 100).toFixed(0);
