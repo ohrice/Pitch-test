@@ -1520,17 +1520,17 @@ if (startBtn) {
         try {
             const destination = audioCtx.createMediaStreamDestination();
 
-            // 建立伴奏增益節點（降低伴奏音量，避免蓋過人聲）
+            // 建立伴奏增益節點（調整伴奏音量）
             const accompGain = audioCtx.createGain();
-            accompGain.gain.value = 0.4; // 伴奏降至 40%
+            accompGain.gain.value = 0.8; // 伴奏提升至 80%（從 40% 提高）
 
             // 建立伴奏延遲節點（補償麥克風處理延遲）
             const accompDelay = audioCtx.createDelay(1.0);
-            accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 120ms
+            accompDelay.delayTime.value = AUDIO_LATENCY_COMPENSATION; // 延遲 220ms
 
-            // 建立麥克風增益節點（適度放大避免破音）
+            // 建立麥克風增益節點（調整人聲音量）
             const micGain = audioCtx.createGain();
-            micGain.gain.value = 4.0; // 麥克風放大 4 倍（平衡音量與音質）
+            micGain.gain.value = 1.8; // 麥克風放大 1.8 倍（從 4.0 降低，避免人聲過大）
 
             // 伴奏 → 增益 → 延遲 → 混音輸出
             sourceNode.connect(accompGain);
@@ -1544,7 +1544,7 @@ if (startBtn) {
 
             mixedStream = destination.stream;
 
-            console.log(`✅ 錄音混音設定：伴奏 40% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 400%（避免破音）`);
+            console.log(`✅ 錄音混音設定：伴奏 80% + ${AUDIO_LATENCY_COMPENSATION*1000}ms延遲, 麥克風 180%（平衡音量）`);
 
             // 檢查 MediaRecorder 支援的格式
             const mimeTypes = [
