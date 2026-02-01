@@ -969,10 +969,12 @@
                         <div style="font-size: 2.5em; font-weight: bold; color: var(--success);" id="totalSongs">0</div>
                         <div style="color: #aaa; margin-top: 5px;">已練習歌曲</div>
                     </div>
+                    <!-- 暫時隱藏平均準確率（評分系統調整中）
                     <div style="text-align: center; padding: 15px; background: rgba(255,221,87,0.1); border-radius: 10px;">
                         <div style="font-size: 2.5em; font-weight: bold; color: var(--warning);" id="avgAccuracy">0%</div>
                         <div style="color: #aaa; margin-top: 5px;">平均準確率</div>
                     </div>
+                    -->
                     <div style="text-align: center; padding: 15px; background: rgba(50,152,220,0.1); border-radius: 10px;">
                         <div style="font-size: 2.5em; font-weight: bold; color: #3298dc;" id="totalTime">0</div>
                         <div style="color: #aaa; margin-top: 5px;">總練習時間</div>
@@ -1244,6 +1246,7 @@
                                     📅 ${date} | ⏱️ ${duration}
                                 </div>
                             </div>
+                            <!-- 暫時隱藏分數和評級（評分系統調整中）
                             <div style="text-align: right;">
                                 <div style="font-size: 2em; font-weight: bold; color: ${grade.color};">
                                     ${record.accuracy}%
@@ -1252,12 +1255,15 @@
                                     ${grade.stars} ${grade.text}
                                 </div>
                             </div>
+                            -->
                         </div>
+                        <!-- 暫時隱藏音符統計（評分系統調整中）
                         <div style="margin-top: 15px; display: flex; gap: 20px; flex-wrap: wrap; font-size: 0.9em; color: #aaa;">
                             <span>⭐ 完美: ${record.perfectNotes}</span>
                             <span>👍 良好: ${record.goodNotes}</span>
                             <span>⚠️ 待改進: ${record.poorNotes}</span>
                         </div>
+                        -->
                     </div>
                 `;
             }).join('');
