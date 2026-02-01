@@ -968,6 +968,16 @@ function saveRecording() {
         return;
     }
 
+    // 詢問用戶是否要下載錄音
+    const wantToDownload = confirm('測試已完成！\n\n是否要下載錄音結果？\n（錄音包含伴奏和您的歌聲）\n\n按「確定」下載錄音\n按「取消」繼續測試');
+
+    if (!wantToDownload) {
+        console.log('用戶選擇不下載錄音');
+        // 清空錄音資料
+        recordedChunks = [];
+        return;
+    }
+
     // 創建 Blob
     const blob = new Blob(recordedChunks, { type: 'audio/webm' });
     const url = URL.createObjectURL(blob);
@@ -995,8 +1005,13 @@ function saveRecording() {
 
     // 通知使用者
     const statusText = document.getElementById('statusText');
-    const currentText = statusText.innerText;
-    statusText.innerText = currentText + ` | 錄音已儲存: ${filename}`;
+    if (statusText) {
+        const currentText = statusText.innerText;
+        statusText.innerText = currentText + ` | 錄音已下載: ${filename}`;
+    }
+
+    // 清空錄音資料
+    recordedChunks = [];
 }
 
 // 顯示測試結果
@@ -1364,8 +1379,8 @@ if (startBtn) {
 
     if (isPlaying) return;
 
-    // 詢問是否需要錄音
-    const wantToRecord = confirm('是否要錄製這次演唱?\n錄音將包含伴奏和您的歌聲。');
+    // 自動開始錄音（測試結束後再決定是否下載）
+    const wantToRecord = true;
 
     // 確保 AudioContext 處於運行狀態
     if (!audioCtx) {
