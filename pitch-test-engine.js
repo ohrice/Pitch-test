@@ -1836,8 +1836,8 @@ function saveVolumeSettings() {
 // 更新滑桿背景漸層
 function updateSliderBackground(slider, value, min, max) {
     const percentage = ((value - min) / (max - min)) * 100;
-    const color = slider.id === 'accompVolumeSlider' ? '#00d1b2' : '#e0bb53';
-    slider.style.background = 'linear-gradient(to right, ' + color + ' 0%, ' + color + ' ' + percentage + '%, #555 ' + percentage + '%, #555 100%)';
+    const color = slider.id === 'accompVolumeSlider' ? '#48c9ff' : '#ff9966';
+    slider.style.background = 'linear-gradient(to right, ' + color + ' 0%, ' + color + ' ' + percentage + '%, #333 ' + percentage + '%, #333 100%)';
 }
 
 // 初始化音量滑桿
